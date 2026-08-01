@@ -7,6 +7,7 @@
 
 import type {
   AppSettings,
+  Backup,
   ConsoleOutput,
   InstallProgress,
   Recommendation,
@@ -119,6 +120,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ command }),
     }),
+  listBackups: (serverId: number) => request<Backup[]>(`/servers/${serverId}/backups`),
+  createBackup: (serverId: number, notes: string | null = null) =>
+    request<Backup>(`/servers/${serverId}/backups`, {
+      method: "POST",
+      body: JSON.stringify({ notes }),
+    }),
+  restoreBackup: (backupId: number) =>
+    request<void>(`/backups/${backupId}/restore`, { method: "POST" }),
+  deleteBackup: (backupId: number) =>
+    request<void>(`/backups/${backupId}`, { method: "DELETE" }),
   versions: (type: ServerType) => request<VersionList>(`/downloads/versions/${type}`),
   installProgress: (id: number) => request<InstallProgress>(`/servers/${id}/install`),
   systemInfo: () => request<SystemInfo>("/system/info"),

@@ -17,7 +17,7 @@ servidores de Minecraft Java Edition sin usar la consola ni editar ficheros a ma
 | 4 | Creación de servidores | ✅ completada |
 | 5 | Descarga automática (Java, jars, librerías) | ✅ completada¹ |
 | 6 | Consola en tiempo real (WebSockets) | ✅ completada |
-| 7 | Backups | pendiente |
+| 7 | Backups | ✅ completada |
 | 8 | Plugins y mods | pendiente |
 | 9 | Red (IP, puertos, UPnP, dominio) | pendiente |
 | 10 | Optimización y pruebas | pendiente |
@@ -138,6 +138,10 @@ cd frontend && npx tsc --noEmit && npx eslint .
 | GET | `/api/v1/servers/{id}/console` | Salida acumulada con índice incremental |
 | POST | `/api/v1/servers/{id}/console` | Envía un comando (validado) al proceso |
 | WS | `/api/v1/servers/{id}/console/ws` | Salida en tiempo real (sólo emite) |
+| GET | `/api/v1/servers/{id}/backups` | Copias de seguridad del servidor |
+| POST | `/api/v1/servers/{id}/backups` | Crea una copia ZIP (en segundo plano) |
+| POST | `/api/v1/backups/{id}/restore` | Restaura una copia (servidor detenido) |
+| DELETE | `/api/v1/backups/{id}` | Elimina la copia y su fichero |
 | GET | `/api/v1/downloads/versions/{tipo}` | Catálogo de versiones del tipo (o el motivo si no se descarga solo) |
 | GET | `/api/v1/downloads/java` | Runtimes de Java gestionados por la aplicación |
 | GET | `/api/v1/settings` | Preferencias de la aplicación |
@@ -169,6 +173,11 @@ Reglas de negocio que aplica el backend:
   corromper el mundo. Al apagar la aplicación se detienen todos los procesos.
 - Los comandos de consola se validan (longitud, una sola línea, sin caracteres
   de control) y el WebSocket nunca los acepta: sólo emite salida.
+- Los backups pueden hacerse con el servidor en marcha: se envía `save-off` y
+  `save-all` antes de comprimir y `save-on` al terminar, el protocolo estándar
+  para no corromper el mundo. La restauración exige el servidor detenido,
+  valida cada entrada del ZIP contra el sandbox (anti zip-slip) y reemplaza la
+  carpeta por intercambio: nunca queda una restauración a medias.
 
 ## Configuración
 

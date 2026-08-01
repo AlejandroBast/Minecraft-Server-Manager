@@ -149,6 +149,18 @@ export interface InstallProgress {
   detail: string;
 }
 
+export type BackupStatus = "pending" | "running" | "completed" | "failed";
+
+export interface Backup {
+  id: number;
+  server_id: number;
+  file: string;
+  size_bytes: number;
+  status: BackupStatus;
+  notes: string | null;
+  created_at: string;
+}
+
 export interface ConsoleLine {
   index: number;
   line: string;

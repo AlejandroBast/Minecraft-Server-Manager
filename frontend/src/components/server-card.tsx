@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Archive,
   Cpu,
   Globe,
   Loader2,
@@ -17,6 +18,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { BackupsDialog } from "@/components/backups-dialog";
 import { ConsoleDialog } from "@/components/console-dialog";
 
 import { StatusBadge } from "@/components/status-badge";
@@ -63,6 +65,7 @@ interface ServerCardProps {
 export function ServerCard({ server, onChanged }: ServerCardProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
+  const [backupsOpen, setBackupsOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [acting, setActing] = useState(false);
 
@@ -199,6 +202,9 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
           <Button size="sm" variant="ghost" onClick={() => setConsoleOpen(true)}>
             <Terminal /> Consola
           </Button>
+          <Button size="sm" variant="ghost" onClick={() => setBackupsOpen(true)}>
+            <Archive /> Copias
+          </Button>
           <Button
             size="icon-sm"
             variant="ghost"
@@ -232,6 +238,15 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
       </Dialog>
 
       <ConsoleDialog server={server} open={consoleOpen} onOpenChange={setConsoleOpen} />
+      {/* Montado sólo al abrirse: evita consultar los backups de cada tarjeta. */}
+      {backupsOpen && (
+        <BackupsDialog
+          server={server}
+          open={backupsOpen}
+          onOpenChange={setBackupsOpen}
+          onChanged={onChanged}
+        />
+      )}
     </>
   );
 }

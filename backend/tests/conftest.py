@@ -74,3 +74,8 @@ def clean_servers(client: TestClient) -> None:
     if servers_dir.exists():
         for child in servers_dir.iterdir():
             shutil.rmtree(child, ignore_errors=True)
+
+    backups_dir = get_settings().backups_dir
+    if backups_dir.exists():
+        for child in backups_dir.glob("*.zip"):
+            child.unlink(missing_ok=True)

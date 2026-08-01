@@ -93,6 +93,20 @@ class ProcessManager:
             return [], 0
         return entry.since(index)
 
+    def wait_for_output(
+        self, server_id: int, pattern: str, *, timeout: float = 10.0
+    ) -> bool:
+        """Espera a que aparezca ``pattern`` en líneas nuevas de la consola."""
+        compiled = re.compile(pattern)
+        _, index = self.output_since(server_id, 0)
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            lines, index = self.output_since(server_id, index)
+            if any(compiled.search(line) for _, line in lines):
+                return True
+            time.sleep(0.2)
+        return False
+
     # -- ciclo de vida -----------------------------------------------------
 
     def _build_command(self, server: Server, jar_path: Path) -> list[str]:
