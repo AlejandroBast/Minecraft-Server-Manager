@@ -14,7 +14,7 @@ servidores de Minecraft Java Edition sin usar la consola ni editar ficheros a ma
 | 1 | Arquitectura del proyecto | ✅ completada |
 | 2 | Backend FastAPI (CRUD de servidores, sistema) | ✅ completada |
 | 3 | Frontend Next.js | ✅ completada |
-| 4 | Creación de servidores | pendiente |
+| 4 | Creación de servidores | ✅ completada |
 | 5 | Descarga automática (Java, jars, librerías) | pendiente |
 | 6 | Consola en tiempo real (WebSockets) | pendiente |
 | 7 | Backups | pendiente |
@@ -132,6 +132,13 @@ cd frontend && npx tsc --noEmit && npx eslint .
 
 Reglas de negocio que aplica el backend:
 
+- Crear un servidor genera su carpeta completa en `servers/`: `eula.txt`
+  aceptada, `server.properties`, `ops.json`, `whitelist.json` y los
+  subdirectorios (`plugins/` o `mods/` según el tipo). Si algo falla a mitad,
+  la instalación se revierte y no queda nada a medias.
+- La base de datos es la fuente de verdad: cambiar ajustes por la API regenera
+  `server.properties`; nunca se edita el fichero a mano.
+- Eliminar un servidor borra también su carpeta (siempre dentro del sandbox).
 - El nombre y el puerto no pueden repetirse entre servidores → `409`.
 - Si otro **programa ajeno** ocupa el puerto, se crea igualmente y se devuelve
   un aviso: recomendar, no bloquear.

@@ -1,8 +1,8 @@
 """Reglas de negocio de los servidores.
 
 No importa FastAPI: recibe esquemas y una sesión, devuelve modelos o lanza
-excepciones de dominio. En esta fase sólo gestiona el registro en base de
-datos; la creación de la carpeta y la descarga del jar llegan en las fases 4 y 5.
+excepciones de dominio. Desde la fase 4 la creación también materializa el
+servidor en disco (carpeta, EULA, configuración); el jar llega en la fase 5.
 """
 
 from __future__ import annotations
@@ -11,6 +11,7 @@ from collections.abc import Sequence
 
 from sqlalchemy.orm import Session
 
+from app.core.config import Settings, get_settings
 from app.core.exceptions import ConflictError, NotFoundError, ServerStateError
 from app.core.logging import get_logger
 from app.core.paths import sanitize_folder_name, to_folder_slug
@@ -18,18 +19,39 @@ from app.models.enums import ServerStatus
 from app.models.server import Server
 from app.repositories.server_repository import ServerRepository
 from app.schemas.server import ServerCreate, ServerUpdate
+from app.services.filesystem import ServerFilesystem
 from app.services.ports import is_port_free
+from app.services.server_installer import ServerInstaller
 
 logger = get_logger("servers")
 
 # Campos que exigen reiniciar el servidor: no se tocan mientras está activo.
 RESTART_REQUIRED_FIELDS = frozenset({"port", "memory_min_mb", "memory_max_mb"})
 
+# Campos que se reflejan en server.properties.
+PROPERTIES_FIELDS = frozenset(
+    {
+        "port",
+        "max_players",
+        "motd",
+        "difficulty",
+        "gamemode",
+        "online_mode",
+        "hardcore",
+        "allow_commands",
+        "whitelist_enabled",
+        "seed",
+    }
+)
+
 
 class ServerService:
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, settings: Settings | None = None) -> None:
         self._session = session
         self._repository = ServerRepository(session)
+        self._settings = settings or get_settings()
+        self._filesystem = ServerFilesystem(self._settings.servers_dir)
+        self._installer = ServerInstaller(self._filesystem)
 
     def list_servers(self) -> Sequence[Server]:
         return self._repository.list_all()
@@ -69,7 +91,18 @@ class ServerService:
             status=ServerStatus.STOPPED,
         )
         self._repository.add(server)
-        self._session.commit()
+
+        # Disco antes de confirmar la transacción: si la instalación falla, la
+        # fila se revierte; si el commit fallara, el instalador ya limpió todo
+        # lo suyo y la carpeta puede recrearse sin conflicto al reintentar.
+        try:
+            self._installer.install(server)
+            self._session.commit()
+        except Exception:
+            self._session.rollback()
+            self._filesystem.remove(server.folder, missing_ok=True)
+            raise
+
         logger.info("Servidor creado: %s (%s %s)", server.name, server.type, server.version)
         return server, warnings
 
@@ -111,6 +144,12 @@ class ServerService:
             setattr(server, field, value)
 
         self._session.commit()
+
+        # La base de datos es la fuente de verdad: el fichero se regenera para
+        # que el próximo arranque del servidor use los ajustes nuevos.
+        if PROPERTIES_FIELDS & changes.keys() and self._filesystem.exists(server.folder):
+            self._installer.rewrite_configuration(server)
+
         logger.info("Servidor actualizado: %s (%s)", server.name, ", ".join(sorted(changes)))
         return server
 
@@ -121,7 +160,9 @@ class ServerService:
                 "Detén el servidor antes de eliminarlo.",
                 details={"status": server.status},
             )
-        # La carpeta del servidor se eliminará en la fase 4, cuando exista.
+        # missing_ok: los servidores registrados antes de la fase 4 no tienen
+        # carpeta en disco, y un borrado repetido no debe fallar.
+        self._filesystem.remove(server.folder, missing_ok=True)
         self._repository.delete(server)
         self._session.commit()
         logger.info("Servidor eliminado: %s", server.name)
@@ -130,7 +171,10 @@ class ServerService:
         base = to_folder_slug(name)
         candidate = base
         suffix = 2
-        while self._repository.get_by_folder(candidate) is not None:
+        while (
+            self._repository.get_by_folder(candidate) is not None
+            or self._filesystem.exists(candidate)
+        ):
             candidate = f"{base}-{suffix}"
             suffix += 1
         return candidate

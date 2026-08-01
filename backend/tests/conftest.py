@@ -25,9 +25,12 @@ for _key, _sub in (
 ):
     os.environ[_key] = str(_TMP_ROOT / _sub)
 
+import shutil  # noqa: E402
+
 import pytest  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
 
+from app.core.config import get_settings  # noqa: E402
 from app.db.base import Base  # noqa: E402
 from app.db.session import engine  # noqa: E402
 from app.main import app  # noqa: E402
@@ -42,7 +45,12 @@ def client() -> Generator[TestClient, None, None]:
 
 @pytest.fixture(autouse=True)
 def clean_servers(client: TestClient) -> None:
-    """Cada prueba empieza sin servidores registrados."""
+    """Cada prueba empieza sin servidores registrados ni carpetas en disco."""
     Base.metadata.create_all(bind=engine)
     with engine.begin() as connection:
         connection.execute(Server.__table__.delete())
+
+    servers_dir = get_settings().servers_dir
+    if servers_dir.exists():
+        for child in servers_dir.iterdir():
+            shutil.rmtree(child, ignore_errors=True)
