@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+frontend/.env*.local
+
+# Entorno
+.env
+
+# Datos generados en tiempo de ejecución
+servers/*
+!servers/.gitkeep
+downloads/*
+!downloads/.gitkeep
+backups/*
+!backups/.gitkeep
+database/*
+!database/.gitkeep
+logs/*
+!logs/.gitkeep
+temp/*
+!temp/.gitkeep
+config/*.local.json
+
+# Sistema
+Thumbs.db
+.DS_Store

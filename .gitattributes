@@ -1,0 +1,11 @@
+# Normaliza los finales de línea: LF en el repositorio, nativo al clonar.
+* text=auto eol=lf
+
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+*.cmd text eol=crlf
+
+*.jar binary
+*.zip binary
+*.png binary
+*.ico binary

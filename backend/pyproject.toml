@@ -1,0 +1,30 @@
+[project]
+name = "minecraft-server-manager-backend"
+version = "0.1.0"
+description = "API de gestión de servidores de Minecraft Java Edition"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["."]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "ANN", "RUF"]
+ignore = ["ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ANN"]
+# SQLAlchemy resuelve las relaciones por nombre; los modelos se importan bajo
+# TYPE_CHECKING para evitar ciclos, así que las anotaciones deben ir entre comillas.
+"app/models/*" = ["UP037"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = []
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
