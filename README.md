@@ -12,7 +12,7 @@ servidores de Minecraft Java Edition sin usar la consola ni editar ficheros a ma
 | Fase | Contenido | Estado |
 |------|-----------|--------|
 | 1 | Arquitectura del proyecto | ✅ completada |
-| 2 | Backend FastAPI (CRUD de servidores, sistema) | pendiente |
+| 2 | Backend FastAPI (CRUD de servidores, sistema) | ✅ completada |
 | 3 | Frontend Next.js | pendiente |
 | 4 | Creación de servidores | pendiente |
 | 5 | Descarga automática (Java, jars, librerías) | pendiente |
@@ -87,6 +87,30 @@ Pruebas:
 ```bash
 backend/.venv/Scripts/python.exe -m pytest
 ```
+
+## API disponible
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/v1/health` | Estado de la API y de la base de datos |
+| GET | `/api/v1/servers` | Lista de servidores registrados |
+| POST | `/api/v1/servers` | Crea un servidor (devuelve avisos no bloqueantes) |
+| GET | `/api/v1/servers/{id}` | Detalle de un servidor |
+| PATCH | `/api/v1/servers/{id}` | Modifica ajustes; bloquea los que exigen reinicio si está activo |
+| DELETE | `/api/v1/servers/{id}` | Elimina un servidor detenido |
+| GET | `/api/v1/system/info` | CPU, RAM, disco, Java, IP local |
+| GET | `/api/v1/system/recommendations` | Jugadores y memoria estimados por tipo de servidor |
+| GET | `/api/v1/settings` | Preferencias de la aplicación |
+| PUT | `/api/v1/settings` | Modifica preferencias (sólo claves conocidas) |
+
+Reglas de negocio que aplica el backend:
+
+- El nombre y el puerto no pueden repetirse entre servidores → `409`.
+- Si otro **programa ajeno** ocupa el puerto, se crea igualmente y se devuelve
+  un aviso: recomendar, no bloquear.
+- `hardcore: true` fuerza dificultad `hard`, como hace el propio juego.
+- Un servidor activo no se puede eliminar ni cambiarle puerto o memoria → `409`.
+- Las recomendaciones **nunca** impiden crear un servidor.
 
 ## Configuración
 

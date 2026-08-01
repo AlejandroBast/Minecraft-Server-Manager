@@ -1,0 +1,48 @@
+"""Configuración de pruebas.
+
+Las variables de entorno se fijan antes de importar la aplicación para que
+``Settings`` apunte a un directorio temporal: las pruebas nunca escriben en la
+base de datos ni en los logs reales del usuario.
+"""
+
+from __future__ import annotations
+
+import os
+import tempfile
+from collections.abc import Generator
+from pathlib import Path
+
+_TMP_ROOT = Path(tempfile.mkdtemp(prefix="msm-tests-"))
+for _key, _sub in (
+    ("MSM_SERVERS_DIR", "servers"),
+    ("MSM_DOWNLOADS_DIR", "downloads"),
+    ("MSM_JAVA_DIR", "downloads/java"),
+    ("MSM_BACKUPS_DIR", "backups"),
+    ("MSM_DATABASE_DIR", "database"),
+    ("MSM_LOGS_DIR", "logs"),
+    ("MSM_CONFIG_DIR", "config"),
+    ("MSM_TEMP_DIR", "temp"),
+):
+    os.environ[_key] = str(_TMP_ROOT / _sub)
+
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+
+from app.db.base import Base  # noqa: E402
+from app.db.session import engine  # noqa: E402
+from app.main import app  # noqa: E402
+from app.models import Server  # noqa: E402
+
+
+@pytest.fixture(scope="session")
+def client() -> Generator[TestClient, None, None]:
+    with TestClient(app) as test_client:
+        yield test_client
+
+
+@pytest.fixture(autouse=True)
+def clean_servers(client: TestClient) -> None:
+    """Cada prueba empieza sin servidores registrados."""
+    Base.metadata.create_all(bind=engine)
+    with engine.begin() as connection:
+        connection.execute(Server.__table__.delete())

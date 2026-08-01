@@ -44,6 +44,12 @@ def resolve_within(base: Path, relative: str | Path = "") -> Path:
     return candidate
 
 
+def to_folder_slug(name: str) -> str:
+    """Convierte un nombre visible en un nombre de carpeta seguro y estable."""
+    slug = re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-")
+    return slug or "servidor"
+
+
 def sanitize_folder_name(name: str) -> str:
     """Valida un nombre de carpeta de servidor generado por el usuario."""
     cleaned = name.strip()

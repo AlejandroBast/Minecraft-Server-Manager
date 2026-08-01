@@ -10,11 +10,13 @@ target-version = "py312"
 src = ["."]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "ANN", "RUF"]
+# "S" (bandit) está activo a propósito: esta aplicación lanza procesos y
+# manipula ficheros del usuario, así que los avisos de seguridad importan.
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM", "ANN", "S", "RUF"]
 ignore = ["ANN401"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["ANN"]
+"tests/*" = ["ANN", "S101"]  # assert es la forma normal de comprobar en pytest
 # SQLAlchemy resuelve las relaciones por nombre; los modelos se importan bajo
 # TYPE_CHECKING para evitar ciclos, así que las anotaciones deben ir entre comillas.
 "app/models/*" = ["UP037"]

@@ -33,6 +33,11 @@ class ServerStatus(StrEnum):
     INSTALLING = "installing"
     ERROR = "error"
 
+    @property
+    def is_active(self) -> bool:
+        """El servidor está en uso: no se puede borrar ni reconfigurar en caliente."""
+        return self not in {ServerStatus.STOPPED, ServerStatus.ERROR}
+
 
 class Difficulty(StrEnum):
     PEACEFUL = "peaceful"

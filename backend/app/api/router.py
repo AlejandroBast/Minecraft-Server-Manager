@@ -8,7 +8,10 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.v1 import health
+from app.api.v1 import health, servers, settings, system
 
 api_router = APIRouter()
 api_router.include_router(health.router)
+api_router.include_router(servers.router)
+api_router.include_router(system.router)
+api_router.include_router(settings.router)

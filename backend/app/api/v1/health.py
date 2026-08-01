@@ -3,20 +3,14 @@
 from __future__ import annotations
 
 import time
-from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 from pydantic import BaseModel
 from sqlalchemy import text
-from sqlalchemy.orm import Session
 
-from app.core.config import Settings, get_settings
-from app.db.session import get_db
+from app.api.deps import AppSettings, DbSession
 
 router = APIRouter(tags=["health"])
-
-DbSession = Annotated[Session, Depends(get_db)]
-AppSettings = Annotated[Settings, Depends(get_settings)]
 
 _STARTED_AT = time.monotonic()
 
