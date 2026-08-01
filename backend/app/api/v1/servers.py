@@ -10,15 +10,22 @@ from app.schemas.downloads import InstallProgressRead
 from app.schemas.server import ServerCreate, ServerCreated, ServerRead, ServerUpdate
 from app.services.download_service import run_full_install
 from app.services.install_tracker import tracker
+from app.services.process_manager import manager
 from app.services.server_service import ServerService
 
 router = APIRouter(prefix="/servers", tags=["servers"])
 
 
+def _with_uptime(server) -> ServerRead:  # noqa: ANN001
+    read = ServerRead.model_validate(server)
+    read.uptime_seconds = manager.uptime_seconds(server.id)
+    return read
+
+
 @router.get("", response_model=list[ServerRead])
 def list_servers(db: DbSession) -> list[ServerRead]:
     servers = ServerService(db).list_servers()
-    return [ServerRead.model_validate(server) for server in servers]
+    return [_with_uptime(server) for server in servers]
 
 
 @router.post("", response_model=ServerCreated, status_code=status.HTTP_201_CREATED)
@@ -34,7 +41,7 @@ def create_server(
 
 @router.get("/{server_id}", response_model=ServerRead)
 def get_server(server_id: int, db: DbSession) -> ServerRead:
-    return ServerRead.model_validate(ServerService(db).get_server(server_id))
+    return _with_uptime(ServerService(db).get_server(server_id))
 
 
 @router.get("/{server_id}/install", response_model=InstallProgressRead)

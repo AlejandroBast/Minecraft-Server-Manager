@@ -18,3 +18,12 @@ export function formatPercent(value: number): string {
 export function formatFrequency(megahertz: number): string {
   return megahertz > 0 ? `${(megahertz / 1000).toFixed(1)} GHz` : "—";
 }
+
+export function formatUptime(seconds: number): string {
+  const total = Math.floor(seconds);
+  const hours = Math.floor(total / 3600);
+  const minutes = Math.floor((total % 3600) / 60);
+  if (hours > 0) return `${hours} h ${minutes} min`;
+  if (minutes > 0) return `${minutes} min`;
+  return `${total} s`;
+}

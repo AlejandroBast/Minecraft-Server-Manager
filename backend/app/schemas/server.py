@@ -105,6 +105,8 @@ class ServerRead(ServerBase):
     last_error: str | None
     created_at: datetime
     updated_at: datetime
+    # Lo rellena la capa API desde el gestor de procesos (no vive en la BD).
+    uptime_seconds: float | None = None
 
     @computed_field
     @property

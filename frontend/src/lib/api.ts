@@ -7,6 +7,7 @@
 
 import type {
   AppSettings,
+  ConsoleOutput,
   InstallProgress,
   Recommendation,
   Server,
@@ -108,6 +109,16 @@ export const api = {
   updateServer: (id: number, payload: Partial<ServerCreatePayload>) =>
     request<Server>(`/servers/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   deleteServer: (id: number) => request<void>(`/servers/${id}`, { method: "DELETE" }),
+  startServer: (id: number) => request<void>(`/servers/${id}/start`, { method: "POST" }),
+  stopServer: (id: number) => request<void>(`/servers/${id}/stop`, { method: "POST" }),
+  restartServer: (id: number) => request<void>(`/servers/${id}/restart`, { method: "POST" }),
+  consoleOutput: (id: number, since = 0) =>
+    request<ConsoleOutput>(`/servers/${id}/console?since=${since}`),
+  sendCommand: (id: number, command: string) =>
+    request<{ sent: string }>(`/servers/${id}/console`, {
+      method: "POST",
+      body: JSON.stringify({ command }),
+    }),
   versions: (type: ServerType) => request<VersionList>(`/downloads/versions/${type}`),
   installProgress: (id: number) => request<InstallProgress>(`/servers/${id}/install`),
   systemInfo: () => request<SystemInfo>("/system/info"),

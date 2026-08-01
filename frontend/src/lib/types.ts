@@ -58,6 +58,7 @@ export interface Server {
   last_error: string | null;
   supports_plugins: boolean;
   supports_mods: boolean;
+  uptime_seconds: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -146,4 +147,15 @@ export interface InstallProgress {
   stage: string;
   progress: number;
   detail: string;
+}
+
+export interface ConsoleLine {
+  index: number;
+  line: string;
+}
+
+export interface ConsoleOutput {
+  lines: ConsoleLine[];
+  next_index: number;
+  running: boolean;
 }

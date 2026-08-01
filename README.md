@@ -16,7 +16,7 @@ servidores de Minecraft Java Edition sin usar la consola ni editar ficheros a ma
 | 3 | Frontend Next.js | ✅ completada |
 | 4 | Creación de servidores | ✅ completada |
 | 5 | Descarga automática (Java, jars, librerías) | ✅ completada¹ |
-| 6 | Consola en tiempo real (WebSockets) | pendiente |
+| 6 | Consola en tiempo real (WebSockets) | ✅ completada |
 | 7 | Backups | pendiente |
 | 8 | Plugins y mods | pendiente |
 | 9 | Red (IP, puertos, UPnP, dominio) | pendiente |
@@ -132,6 +132,12 @@ cd frontend && npx tsc --noEmit && npx eslint .
 | GET | `/api/v1/system/info` | CPU, RAM, disco, Java, IP local |
 | GET | `/api/v1/system/recommendations` | Jugadores y memoria estimados por tipo de servidor |
 | GET | `/api/v1/servers/{id}/install` | Progreso de la instalación en curso |
+| POST | `/api/v1/servers/{id}/start` | Arranca el proceso Java del servidor |
+| POST | `/api/v1/servers/{id}/stop` | Detención limpia (`stop` por stdin; kill sólo si no responde) |
+| POST | `/api/v1/servers/{id}/restart` | Reinicio (parar y volver a arrancar) |
+| GET | `/api/v1/servers/{id}/console` | Salida acumulada con índice incremental |
+| POST | `/api/v1/servers/{id}/console` | Envía un comando (validado) al proceso |
+| WS | `/api/v1/servers/{id}/console/ws` | Salida en tiempo real (sólo emite) |
 | GET | `/api/v1/downloads/versions/{tipo}` | Catálogo de versiones del tipo (o el motivo si no se descarga solo) |
 | GET | `/api/v1/downloads/java` | Runtimes de Java gestionados por la aplicación |
 | GET | `/api/v1/settings` | Preferencias de la aplicación |
@@ -157,6 +163,12 @@ Reglas de negocio que aplica el backend:
   fuente), y termina en `stopped` o en `error` con el motivo.
 - El Java requerido lo dicta el manifest de Mojang por versión (p. ej. `26.2`
   exige Java 25; `1.21.4`, Java 21; `1.16.5`, Java 8): nada de tablas fijas.
+- Cada servidor en marcha es un proceso Java independiente. El estado pasa a
+  `online` al detectar el «Done (…s)!» del log real, y la detención siempre
+  intenta `stop` por stdin (30 s) antes de matar: matar sin guardar puede
+  corromper el mundo. Al apagar la aplicación se detienen todos los procesos.
+- Los comandos de consola se validan (longitud, una sola línea, sin caracteres
+  de control) y el WebSocket nunca los acepta: sólo emite salida.
 
 ## Configuración
 

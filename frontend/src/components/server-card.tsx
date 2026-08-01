@@ -6,14 +6,18 @@ import {
   Loader2,
   Play,
   Puzzle,
+  RotateCcw,
   Square,
   Terminal,
+  Timer,
   Trash2,
   TriangleAlert,
   Users,
 } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+
+import { ConsoleDialog } from "@/components/console-dialog";
 
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +42,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { usePolling } from "@/hooks/use-polling";
 import { ApiError, api } from "@/lib/api";
-import { formatMemory } from "@/lib/format";
+import { formatMemory, formatUptime } from "@/lib/format";
 import type { Server } from "@/lib/types";
 
 const TYPE_LABELS: Record<Server["type"], string> = {
@@ -51,10 +55,6 @@ const TYPE_LABELS: Record<Server["type"], string> = {
   neoforge: "NeoForge",
 };
 
-// Arrancar y detener llegan en la fase 4; los controles se muestran para que la
-// tarjeta quede completa, pero desactivados y explicando por qué.
-const PENDING_PHASE = "Disponible cuando se implante la creación real del servidor (fase 4).";
-
 interface ServerCardProps {
   server: Server;
   onChanged: () => void;
@@ -62,7 +62,24 @@ interface ServerCardProps {
 
 export function ServerCard({ server, onChanged }: ServerCardProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [consoleOpen, setConsoleOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [acting, setActing] = useState(false);
+
+  const canStart = server.status === "stopped" || server.status === "error";
+  const canStop = server.status === "online" || server.status === "starting";
+
+  async function runAction(action: () => Promise<void>, errorMessage: string) {
+    setActing(true);
+    try {
+      await action();
+      onChanged();
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : errorMessage);
+    } finally {
+      setActing(false);
+    }
+  }
 
   async function handleDelete() {
     setDeleting(true);
@@ -125,24 +142,61 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
               <dt className="sr-only">Jugadores máximos</dt>
               <dd className="text-foreground tabular-nums">{server.max_players}</dd>
             </div>
-            <div className="col-span-2 flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Cpu className="size-3.5 shrink-0" />
               <dt className="sr-only">Memoria</dt>
               <dd className="text-foreground">
                 {formatMemory(server.memory_min_mb)} – {formatMemory(server.memory_max_mb)}
               </dd>
             </div>
+            {server.uptime_seconds !== null && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Timer className="size-3.5 shrink-0" />
+                <dt className="sr-only">Tiempo activo</dt>
+                <dd className="text-foreground tabular-nums">
+                  {formatUptime(server.uptime_seconds)}
+                </dd>
+              </div>
+            )}
           </dl>
         </CardContent>
 
         <CardFooter className="gap-2">
-          <Button size="sm" disabled title={PENDING_PHASE}>
-            <Play /> Iniciar
-          </Button>
-          <Button size="sm" variant="outline" disabled title={PENDING_PHASE}>
-            <Square /> Detener
-          </Button>
-          <Button size="sm" variant="ghost" disabled title="Consola en tiempo real: fase 6.">
+          {canStop ? (
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={acting}
+                onClick={() =>
+                  runAction(() => api.stopServer(server.id), "No se pudo detener el servidor.")
+                }
+              >
+                <Square /> Detener
+              </Button>
+              <Button
+                size="sm"
+                variant="ghost"
+                disabled={acting}
+                onClick={() =>
+                  runAction(() => api.restartServer(server.id), "No se pudo reiniciar.")
+                }
+              >
+                <RotateCcw /> Reiniciar
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="sm"
+              disabled={acting || !canStart}
+              onClick={() =>
+                runAction(() => api.startServer(server.id), "No se pudo iniciar el servidor.")
+              }
+            >
+              {acting ? <Loader2 className="animate-spin" /> : <Play />} Iniciar
+            </Button>
+          )}
+          <Button size="sm" variant="ghost" onClick={() => setConsoleOpen(true)}>
             <Terminal /> Consola
           </Button>
           <Button
@@ -176,6 +230,8 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConsoleDialog server={server} open={consoleOpen} onOpenChange={setConsoleOpen} />
     </>
   );
 }
