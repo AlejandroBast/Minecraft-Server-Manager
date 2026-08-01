@@ -1,0 +1,159 @@
+"use client";
+
+import { Cpu, Globe, Loader2, Play, Puzzle, Square, Terminal, Trash2, Users } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
+import { StatusBadge } from "@/components/status-badge";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ApiError, api } from "@/lib/api";
+import { formatMemory } from "@/lib/format";
+import type { Server } from "@/lib/types";
+
+const TYPE_LABELS: Record<Server["type"], string> = {
+  vanilla: "Vanilla",
+  paper: "Paper",
+  purpur: "Purpur",
+  spigot: "Spigot",
+  fabric: "Fabric",
+  forge: "Forge",
+  neoforge: "NeoForge",
+};
+
+// Arrancar y detener llegan en la fase 4; los controles se muestran para que la
+// tarjeta quede completa, pero desactivados y explicando por qué.
+const PENDING_PHASE = "Disponible cuando se implante la creación real del servidor (fase 4).";
+
+interface ServerCardProps {
+  server: Server;
+  onChanged: () => void;
+}
+
+export function ServerCard({ server, onChanged }: ServerCardProps) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await api.deleteServer(server.id);
+      toast.success(`Servidor «${server.name}» eliminado.`);
+      setConfirmOpen(false);
+      onChanged();
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "No se pudo eliminar el servidor.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <>
+      <Card className="transition-colors hover:border-foreground/20">
+        <CardHeader>
+          <CardTitle className="text-base">{server.name}</CardTitle>
+          <CardDescription className="line-clamp-1">{server.motd}</CardDescription>
+          <CardAction>
+            <StatusBadge status={server.status} />
+          </CardAction>
+        </CardHeader>
+
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap gap-1.5">
+            <Badge variant="secondary">{TYPE_LABELS[server.type]}</Badge>
+            <Badge variant="outline">{server.version}</Badge>
+            {server.supports_plugins && (
+              <Badge variant="outline">
+                <Puzzle /> Plugins
+              </Badge>
+            )}
+            {server.supports_mods && (
+              <Badge variant="outline">
+                <Puzzle /> Mods
+              </Badge>
+            )}
+          </div>
+
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Globe className="size-3.5 shrink-0" />
+              <dt className="sr-only">Puerto</dt>
+              <dd className="text-foreground tabular-nums">{server.port}</dd>
+            </div>
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Users className="size-3.5 shrink-0" />
+              <dt className="sr-only">Jugadores máximos</dt>
+              <dd className="text-foreground tabular-nums">{server.max_players}</dd>
+            </div>
+            <div className="col-span-2 flex items-center gap-2 text-muted-foreground">
+              <Cpu className="size-3.5 shrink-0" />
+              <dt className="sr-only">Memoria</dt>
+              <dd className="text-foreground">
+                {formatMemory(server.memory_min_mb)} – {formatMemory(server.memory_max_mb)}
+              </dd>
+            </div>
+          </dl>
+        </CardContent>
+
+        <CardFooter className="gap-2">
+          <Button size="sm" disabled title={PENDING_PHASE}>
+            <Play /> Iniciar
+          </Button>
+          <Button size="sm" variant="outline" disabled title={PENDING_PHASE}>
+            <Square /> Detener
+          </Button>
+          <Button size="sm" variant="ghost" disabled title="Consola en tiempo real: fase 6.">
+            <Terminal /> Consola
+          </Button>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            className="ml-auto text-muted-foreground hover:text-destructive"
+            aria-label={`Eliminar ${server.name}`}
+            onClick={() => setConfirmOpen(true)}
+          >
+            <Trash2 />
+          </Button>
+        </CardFooter>
+      </Card>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>¿Eliminar «{server.name}»?</DialogTitle>
+            <DialogDescription>
+              Se borrará el registro del servidor. Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={deleting}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+              {deleting ? <Loader2 className="animate-spin" /> : <Trash2 />}
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}

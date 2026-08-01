@@ -13,7 +13,7 @@ servidores de Minecraft Java Edition sin usar la consola ni editar ficheros a ma
 |------|-----------|--------|
 | 1 | Arquitectura del proyecto | ✅ completada |
 | 2 | Backend FastAPI (CRUD de servidores, sistema) | ✅ completada |
-| 3 | Frontend Next.js | pendiente |
+| 3 | Frontend Next.js | ✅ completada |
 | 4 | Creación de servidores | pendiente |
 | 5 | Descarga automática (Java, jars, librerías) | pendiente |
 | 6 | Consola en tiempo real (WebSockets) | pendiente |
@@ -60,7 +60,12 @@ minecraft-server-manager/
 │   │   ├── schemas/    esquemas Pydantic
 │   │   └── services/   servidores, descargas, backups, red
 │   └── tests/
-├── frontend/           Next.js + Tailwind + shadcn/ui (fase 3)
+├── frontend/           Next.js 16 + Tailwind 4 + shadcn/ui
+│   └── src/
+│       ├── app/        layout y dashboard
+│       ├── components/ tarjetas, formulario de creación, panel de sistema
+│       ├── hooks/      consulta periódica de la API
+│       └── lib/        cliente tipado, tipos del contrato y formateo
 ├── servers/            un directorio por servidor creado
 ├── downloads/          jars, librerías y runtimes de Java
 ├── backups/            copias comprimidas en ZIP
@@ -86,6 +91,28 @@ Pruebas:
 
 ```bash
 backend/.venv/Scripts/python.exe -m pytest
+```
+
+## Puesta en marcha (frontend)
+
+Con el backend en marcha, en otra terminal:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Interfaz: <http://localhost:3000>
+
+El navegador llama directamente a la API (`http://127.0.0.1:8000/api/v1`). Todo
+corre en el mismo equipo, así que un proxy en Next sólo añadiría latencia. Para
+apuntar a otra dirección, define `NEXT_PUBLIC_API_URL`.
+
+Comprobaciones:
+
+```bash
+cd frontend && npx tsc --noEmit && npx eslint .
 ```
 
 ## API disponible
