@@ -44,6 +44,26 @@ def client() -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture(autouse=True)
+def sin_descargas_reales(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Las pruebas nunca tocan la red: la instalación de fondo se simula.
+
+    El sustituto marca el servidor como STOPPED, igual que haría la
+    instalación real al terminar con éxito.
+    """
+    import app.api.v1.servers as servers_api
+    from app.db.session import session_scope
+    from app.models import Server, ServerStatus
+
+    def instalacion_instantanea(server_id: int) -> None:
+        with session_scope() as session:
+            server = session.get(Server, server_id)
+            if server is not None:
+                server.status = ServerStatus.STOPPED
+
+    monkeypatch.setattr(servers_api, "run_full_install", instalacion_instantanea)
+
+
+@pytest.fixture(autouse=True)
 def clean_servers(client: TestClient) -> None:
     """Cada prueba empieza sin servidores registrados ni carpetas en disco."""
     Base.metadata.create_all(bind=engine)

@@ -27,7 +27,7 @@ def test_crear_y_listar(client: TestClient) -> None:
     assert server["id"] > 0
     assert server["name"] == "Mi Servidor"
     assert server["folder"] == "mi-servidor"
-    assert server["status"] == "stopped"
+    assert server["status"] == "installing"  # la descarga corre en segundo plano
     assert server["supports_plugins"] is True
     assert server["supports_mods"] is False
 

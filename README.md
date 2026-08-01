@@ -15,12 +15,16 @@ servidores de Minecraft Java Edition sin usar la consola ni editar ficheros a ma
 | 2 | Backend FastAPI (CRUD de servidores, sistema) | ✅ completada |
 | 3 | Frontend Next.js | ✅ completada |
 | 4 | Creación de servidores | ✅ completada |
-| 5 | Descarga automática (Java, jars, librerías) | pendiente |
+| 5 | Descarga automática (Java, jars, librerías) | ✅ completada¹ |
 | 6 | Consola en tiempo real (WebSockets) | pendiente |
 | 7 | Backups | pendiente |
 | 8 | Plugins y mods | pendiente |
 | 9 | Red (IP, puertos, UPnP, dominio) | pendiente |
 | 10 | Optimización y pruebas | pendiente |
+
+¹ Vanilla, Paper, Purpur y Fabric se descargan e instalan solos (jar + Java).
+Spigot no publica descargas (exige BuildTools) y Forge/NeoForge usan un
+instalador que hay que ejecutar: su automatización llega con la fase 8.
 
 ## Arquitectura
 
@@ -127,6 +131,9 @@ cd frontend && npx tsc --noEmit && npx eslint .
 | DELETE | `/api/v1/servers/{id}` | Elimina un servidor detenido |
 | GET | `/api/v1/system/info` | CPU, RAM, disco, Java, IP local |
 | GET | `/api/v1/system/recommendations` | Jugadores y memoria estimados por tipo de servidor |
+| GET | `/api/v1/servers/{id}/install` | Progreso de la instalación en curso |
+| GET | `/api/v1/downloads/versions/{tipo}` | Catálogo de versiones del tipo (o el motivo si no se descarga solo) |
+| GET | `/api/v1/downloads/java` | Runtimes de Java gestionados por la aplicación |
 | GET | `/api/v1/settings` | Preferencias de la aplicación |
 | PUT | `/api/v1/settings` | Modifica preferencias (sólo claves conocidas) |
 
@@ -145,6 +152,11 @@ Reglas de negocio que aplica el backend:
 - `hardcore: true` fuerza dificultad `hard`, como hace el propio juego.
 - Un servidor activo no se puede eliminar ni cambiarle puerto o memoria → `409`.
 - Las recomendaciones **nunca** impiden crear un servidor.
+- La creación es asíncrona: el servidor nace en `installing`, se descargan el
+  Java necesario (Temurin, con sha256) y el `server.jar` (hash de cada
+  fuente), y termina en `stopped` o en `error` con el motivo.
+- El Java requerido lo dicta el manifest de Mojang por versión (p. ej. `26.2`
+  exige Java 25; `1.21.4`, Java 21; `1.16.5`, Java 8): nada de tablas fijas.
 
 ## Configuración
 

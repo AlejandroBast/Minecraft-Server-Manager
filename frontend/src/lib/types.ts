@@ -134,3 +134,16 @@ export interface Recommendation {
 export interface AppSettings {
   values: Record<string, string | null>;
 }
+
+export interface VersionList {
+  type: ServerType;
+  supported: boolean;
+  reason: string | null;
+  versions: { version: string; stable: boolean }[];
+}
+
+export interface InstallProgress {
+  stage: string;
+  progress: number;
+  detail: string;
+}

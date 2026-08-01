@@ -1,7 +1,7 @@
 "use client";
 
-import { Loader2, Plus, Sparkles } from "lucide-react";
-import { useState } from "react";
+import { Loader2, Plus, Sparkles, TriangleAlert } from "lucide-react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,7 @@ import {
   type Recommendation,
   type ServerCreatePayload,
   type ServerType,
+  type VersionList,
 } from "@/lib/types";
 
 const TYPE_LABELS: Record<ServerType, string> = {
@@ -65,7 +66,7 @@ const GAMEMODE_LABELS: Record<GameMode, string> = {
 const DEFAULTS: ServerCreatePayload = {
   name: "",
   type: "paper",
-  version: "1.21.4",
+  version: "",
   port: 25565,
   max_players: 20,
   motd: "Un servidor de Minecraft",
@@ -90,8 +91,42 @@ export function CreateServerDialog({ recommendations, onCreated }: CreateServerD
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<ServerCreatePayload>(DEFAULTS);
+  const [catalog, setCatalog] = useState<VersionList | null>(null);
 
   const recommendation = recommendations.find((item) => item.server_type === form.type);
+
+  // El estado de carga se deriva: el catálogo en memoria es de otro tipo (o no
+  // existe) mientras la petición está en vuelo.
+  const loadingVersions = open && catalog?.type !== form.type;
+
+  // Al cambiar el tipo se consulta su catálogo y se preselecciona la última
+  // versión estable. El catálogo también dice si el tipo aún no se descarga.
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    api
+      .versions(form.type)
+      .then((list) => {
+        if (cancelled) return;
+        setCatalog(list);
+        const firstStable = list.versions.find((item) => item.stable);
+        setForm((current) =>
+          current.type === list.type
+            ? { ...current, version: firstStable?.version ?? "" }
+            : current,
+        );
+      })
+      .catch(() => {
+        if (!cancelled) toast.error("No se pudo obtener la lista de versiones.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, form.type]);
+
+  const unsupported = !loadingVersions && catalog !== null && !catalog.supported;
+  const stableVersions =
+    catalog?.type === form.type ? catalog.versions.filter((item) => item.stable) : [];
 
   function update(patch: Partial<ServerCreatePayload>) {
     setForm((current) => ({ ...current, ...patch }));
@@ -113,7 +148,9 @@ export function CreateServerDialog({ recommendations, onCreated }: CreateServerD
         ...form,
         seed: form.seed?.trim() ? form.seed.trim() : null,
       });
-      toast.success(`Servidor «${created.server.name}» creado.`);
+      toast.success(
+        `Servidor «${created.server.name}» creado. Descargando Java y los archivos…`,
+      );
       created.warnings.forEach((warning) => toast.warning(warning));
       setForm(DEFAULTS);
       setOpen(false);
@@ -148,6 +185,13 @@ export function CreateServerDialog({ recommendations, onCreated }: CreateServerD
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
+          {unsupported && catalog?.reason && (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+              <p>{catalog.reason}</p>
+            </div>
+          )}
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2 sm:col-span-2">
               <Label htmlFor="name">Nombre</Label>
@@ -180,16 +224,24 @@ export function CreateServerDialog({ recommendations, onCreated }: CreateServerD
 
             <div className="space-y-2">
               <Label htmlFor="version">Versión</Label>
-              <Input
-                id="version"
+              <Select
                 value={form.version}
-                onChange={(event) => update({ version: event.target.value })}
-                placeholder="1.21.4"
-                required
-              />
-              <p className="text-xs text-muted-foreground">
-                La lista automática de versiones llega en la fase 5.
-              </p>
+                onValueChange={(value) => update({ version: value })}
+                disabled={loadingVersions || unsupported || stableVersions.length === 0}
+              >
+                <SelectTrigger id="version" className="w-full">
+                  <SelectValue
+                    placeholder={loadingVersions ? "Cargando versiones…" : "Elige una versión"}
+                  />
+                </SelectTrigger>
+                <SelectContent className="max-h-72">
+                  {stableVersions.map((item) => (
+                    <SelectItem key={item.version} value={item.version}>
+                      {item.version}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
@@ -389,7 +441,7 @@ export function CreateServerDialog({ recommendations, onCreated }: CreateServerD
             <Button type="button" variant="outline" onClick={() => setOpen(false)} disabled={saving}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={saving}>
+            <Button type="submit" disabled={saving || unsupported || !form.version}>
               {saving ? <Loader2 className="animate-spin" /> : <Plus />}
               Crear servidor
             </Button>

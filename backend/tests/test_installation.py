@@ -50,11 +50,29 @@ def test_crear_genera_la_estructura_completa(client: TestClient) -> None:
     assert json.loads((root / "ops.json").read_text(encoding="utf-8")) == []
 
 
-def test_forge_crea_mods_y_no_plugins(client: TestClient) -> None:
-    server = _create(client, name="Con Mods", type="forge", port=25581)
-    root = _root(server["folder"])
-    assert (root / "mods").is_dir()
-    assert not (root / "plugins").exists()
+def test_forge_crea_mods_y_no_plugins() -> None:
+    # Forge aún no se crea por la API (su descarga llega en la fase 8), pero el
+    # instalador de disco ya debe saber montar su estructura.
+    from app.models import Difficulty, GameMode, Server, ServerStatus, ServerType
+    from app.services.server_installer import ServerInstaller
+
+    fs = ServerFilesystem(get_settings().servers_dir)
+    server = Server(
+        name="Con Mods",
+        folder="con-mods",
+        type=ServerType.FORGE,
+        version="1.20.1",
+        status=ServerStatus.STOPPED,
+        port=25581,
+        difficulty=Difficulty.NORMAL,
+        gamemode=GameMode.SURVIVAL,
+    )
+    try:
+        root = ServerInstaller(fs).install(server)
+        assert (root / "mods").is_dir()
+        assert not (root / "plugins").exists()
+    finally:
+        fs.remove("con-mods", missing_ok=True)
 
 
 def test_properties_reflejan_la_configuracion(client: TestClient) -> None:

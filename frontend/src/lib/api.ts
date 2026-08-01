@@ -7,11 +7,14 @@
 
 import type {
   AppSettings,
+  InstallProgress,
   Recommendation,
   Server,
   ServerCreatePayload,
   ServerCreated,
+  ServerType,
   SystemInfo,
+  VersionList,
 } from "@/lib/types";
 
 export const API_URL =
@@ -105,6 +108,8 @@ export const api = {
   updateServer: (id: number, payload: Partial<ServerCreatePayload>) =>
     request<Server>(`/servers/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   deleteServer: (id: number) => request<void>(`/servers/${id}`, { method: "DELETE" }),
+  versions: (type: ServerType) => request<VersionList>(`/downloads/versions/${type}`),
+  installProgress: (id: number) => request<InstallProgress>(`/servers/${id}/install`),
   systemInfo: () => request<SystemInfo>("/system/info"),
   recommendations: () => request<Recommendation[]>("/system/recommendations"),
   settings: () => request<AppSettings>("/settings"),

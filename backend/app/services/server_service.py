@@ -22,6 +22,7 @@ from app.schemas.server import ServerCreate, ServerUpdate
 from app.services.filesystem import ServerFilesystem
 from app.services.ports import is_port_free
 from app.services.server_installer import ServerInstaller
+from app.services.version_catalog import DOWNLOADABLE_TYPES, SUPPORT_NOTES
 
 logger = get_logger("servers")
 
@@ -65,6 +66,11 @@ class ServerService:
         return server
 
     def create_server(self, data: ServerCreate) -> tuple[Server, list[str]]:
+        if data.type not in DOWNLOADABLE_TYPES:
+            # Mejor rechazar con una explicación que crear un servidor sin jar
+            # condenado a quedarse en estado de error.
+            raise ConflictError(SUPPORT_NOTES[data.type], details={"type": data.type})
+
         name = sanitize_folder_name(data.name)
         if self._repository.get_by_name(name) is not None:
             raise ConflictError("Ya existe un servidor con ese nombre.", details={"name": name})
@@ -84,11 +90,13 @@ class ServerService:
                 f"Otro programa del equipo está usando el puerto {data.port} en este momento."
             )
 
+        # Nace en INSTALLING: la descarga de Java y del jar corre en segundo
+        # plano y es el instalador quien lo pasa a STOPPED o ERROR.
         server = Server(
             **data.model_dump(exclude={"name"}),
             name=name,
             folder=self._unique_folder(name),
-            status=ServerStatus.STOPPED,
+            status=ServerStatus.INSTALLING,
         )
         self._repository.add(server)
 

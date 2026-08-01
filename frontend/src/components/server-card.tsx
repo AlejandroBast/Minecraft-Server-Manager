@@ -1,6 +1,17 @@
 "use client";
 
-import { Cpu, Globe, Loader2, Play, Puzzle, Square, Terminal, Trash2, Users } from "lucide-react";
+import {
+  Cpu,
+  Globe,
+  Loader2,
+  Play,
+  Puzzle,
+  Square,
+  Terminal,
+  Trash2,
+  TriangleAlert,
+  Users,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -24,6 +35,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { usePolling } from "@/hooks/use-polling";
 import { ApiError, api } from "@/lib/api";
 import { formatMemory } from "@/lib/format";
 import type { Server } from "@/lib/types";
@@ -92,6 +105,15 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
             )}
           </div>
 
+          {server.status === "installing" && <InstallProgressRow serverId={server.id} />}
+
+          {server.status === "error" && server.last_error && (
+            <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive">
+              <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
+              <p className="line-clamp-3">{server.last_error}</p>
+            </div>
+          )}
+
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Globe className="size-3.5 shrink-0" />
@@ -155,5 +177,34 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
         </DialogContent>
       </Dialog>
     </>
+  );
+}
+
+const STAGE_LABELS: Record<string, string> = {
+  java: "Descargando Java",
+  jar: "Descargando el servidor",
+  listo: "Instalación completada",
+  error: "Error en la instalación",
+};
+
+function InstallProgressRow({ serverId }: { serverId: number }) {
+  const { data } = usePolling(() => api.installProgress(serverId), 1000);
+
+  return (
+    <div className="space-y-1.5 rounded-lg border border-border bg-muted/40 p-2.5">
+      <div className="flex items-center justify-between gap-2 text-xs">
+        <span className="flex items-center gap-1.5 text-muted-foreground">
+          <Loader2 className="size-3 animate-spin" />
+          {data ? (STAGE_LABELS[data.stage] ?? data.stage) : "Preparando la instalación…"}
+        </span>
+        {data && data.progress > 0 && (
+          <span className="tabular-nums text-muted-foreground">
+            {Math.round(data.progress * 100)}%
+          </span>
+        )}
+      </div>
+      <Progress value={(data?.progress ?? 0) * 100} />
+      {data?.detail && <p className="text-xs text-muted-foreground">{data.detail}</p>}
+    </div>
   );
 }
