@@ -55,6 +55,26 @@ FABRIC_GAME = [
 ]
 FABRIC_LOADER = [{"version": "0.19.3", "stable": True}]
 FABRIC_INSTALLER = [{"version": "1.1.2", "stable": True}]
+FORGE_PROMOS = {
+    "promos": {
+        "1.21.4-latest": "54.1.6",
+        "26.1.2-latest": "60.0.9",
+        "26.2-latest": "61.0.5",
+        "26.2-recommended": "61.0.4",
+    }
+}
+NEOFORGE_XML = """<?xml version="1.0"?>
+<metadata>
+  <versioning>
+    <versions>
+      <version>21.4.154</version>
+      <version>26.2.0.40-beta</version>
+      <version>26.2.0.41-beta</version>
+      <version>26.1.2.94</version>
+    </versions>
+  </versioning>
+</metadata>
+"""
 
 
 @pytest.fixture(autouse=True)
@@ -68,6 +88,7 @@ def catalogo_sin_red(monkeypatch: pytest.MonkeyPatch) -> None:
         f"{catalog.FABRIC_META}/game": FABRIC_GAME,
         f"{catalog.FABRIC_META}/loader": FABRIC_LOADER,
         f"{catalog.FABRIC_META}/installer": FABRIC_INSTALLER,
+        catalog.FORGE_PROMOTIONS_URL: FORGE_PROMOS,
         **MOJANG_METAS,
     }
 
@@ -75,7 +96,15 @@ def catalogo_sin_red(monkeypatch: pytest.MonkeyPatch) -> None:
         assert url in responses, f"petición inesperada en pruebas: {url}"
         return responses[url]
 
+    def fake_get_text(url: str) -> str:
+        if url == catalog.NEOFORGE_METADATA_URL:
+            return NEOFORGE_XML
+        if url.endswith(".sha1"):
+            return "cafe1234"
+        raise AssertionError(f"petición de texto inesperada: {url}")
+
     monkeypatch.setattr(catalog, "get_json", fake_get_json)
+    monkeypatch.setattr(catalog, "get_text", fake_get_text)
     monkeypatch.setattr(catalog, "_cache", {})
 
 
@@ -115,13 +144,40 @@ def test_resolver_fabric_compone_la_url() -> None:
     assert download.url.endswith("/loader/26.2/0.19.3/1.1.2/server/jar")
 
 
-def test_tipos_no_descargables() -> None:
+def test_spigot_no_descargable() -> None:
     from app.core.exceptions import ValidationError
 
-    for tipo in (ServerType.SPIGOT, ServerType.FORGE, ServerType.NEOFORGE):
-        assert catalog.list_versions(tipo) == []
-        with pytest.raises(ValidationError):
-            catalog.resolve_jar(tipo, "1.21.4")
+    assert catalog.list_versions(ServerType.SPIGOT) == []
+    with pytest.raises(ValidationError):
+        catalog.resolve_jar(ServerType.SPIGOT, "1.21.4")
+
+
+def test_forge_lista_y_resuelve_instalador() -> None:
+    versions = catalog.list_versions(ServerType.FORGE)
+    assert versions[0].version == "26.2"
+    assert versions[0].stable is True  # tiene recommended
+    assert {"1.21.4", "26.1.2"} <= {item.version for item in versions}
+    latest_only = next(item for item in versions if item.version == "1.21.4")
+    assert latest_only.stable is False  # sólo latest
+
+    download = catalog.resolve_jar(ServerType.FORGE, "26.2")
+    assert download.build == "61.0.4"  # recommended gana a latest
+    assert download.url.endswith("/26.2-61.0.4/forge-26.2-61.0.4-installer.jar")
+    assert download.sha1 == "cafe1234"
+
+
+def test_neoforge_lista_y_resuelve_instalador() -> None:
+    versions = catalog.list_versions(ServerType.NEOFORGE)
+    assert {item.version for item in versions} == {"1.21.4", "26.2", "26.1.2"}
+    beta_only = next(item for item in versions if item.version == "26.2")
+    assert beta_only.stable is False  # sólo hay betas de 26.2
+
+    download = catalog.resolve_jar(ServerType.NEOFORGE, "26.2")
+    assert download.build == "26.2.0.41-beta"  # la beta más nueva
+    assert download.url.endswith("/26.2.0.41-beta/neoforge-26.2.0.41-beta-installer.jar")
+
+    stable = catalog.resolve_jar(ServerType.NEOFORGE, "26.1.2")
+    assert stable.build == "26.1.2.94"
 
 
 def test_endpoint_versiones(client: TestClient) -> None:

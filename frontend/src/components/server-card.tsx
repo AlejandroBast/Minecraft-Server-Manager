@@ -18,6 +18,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { AddonsDialog } from "@/components/addons-dialog";
 import { BackupsDialog } from "@/components/backups-dialog";
 import { ConsoleDialog } from "@/components/console-dialog";
 
@@ -66,6 +67,9 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [backupsOpen, setBackupsOpen] = useState(false);
+  const [addonsOpen, setAddonsOpen] = useState(false);
+
+  const addonKind = server.supports_plugins ? "plugins" : server.supports_mods ? "mods" : null;
   const [deleting, setDeleting] = useState(false);
   const [acting, setActing] = useState(false);
 
@@ -205,6 +209,11 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
           <Button size="sm" variant="ghost" onClick={() => setBackupsOpen(true)}>
             <Archive /> Copias
           </Button>
+          {addonKind && (
+            <Button size="sm" variant="ghost" onClick={() => setAddonsOpen(true)}>
+              <Puzzle /> {addonKind === "plugins" ? "Plugins" : "Mods"}
+            </Button>
+          )}
           <Button
             size="icon-sm"
             variant="ghost"
@@ -238,13 +247,21 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
       </Dialog>
 
       <ConsoleDialog server={server} open={consoleOpen} onOpenChange={setConsoleOpen} />
-      {/* Montado sólo al abrirse: evita consultar los backups de cada tarjeta. */}
+      {/* Montados sólo al abrirse: evita consultas por cada tarjeta. */}
       {backupsOpen && (
         <BackupsDialog
           server={server}
           open={backupsOpen}
           onOpenChange={setBackupsOpen}
           onChanged={onChanged}
+        />
+      )}
+      {addonsOpen && addonKind && (
+        <AddonsDialog
+          server={server}
+          kind={addonKind}
+          open={addonsOpen}
+          onOpenChange={setAddonsOpen}
         />
       )}
     </>

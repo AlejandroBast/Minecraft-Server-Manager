@@ -149,6 +149,14 @@ export interface InstallProgress {
   detail: string;
 }
 
+export type AddonKind = "plugins" | "mods";
+
+export interface Addon {
+  file: string;
+  size_bytes: number;
+  enabled: boolean;
+}
+
 export type BackupStatus = "pending" | "running" | "completed" | "failed";
 
 export interface Backup {

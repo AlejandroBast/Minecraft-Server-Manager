@@ -12,6 +12,7 @@ dejarle guardar puede corromper el mundo.
 
 from __future__ import annotations
 
+import platform
 import re
 import subprocess
 import threading
@@ -24,7 +25,7 @@ from app.core.config import get_settings
 from app.core.exceptions import NotFoundError, ServerStateError, ValidationError
 from app.core.logging import get_logger
 from app.db.session import session_scope
-from app.models.enums import ServerStatus
+from app.models.enums import ServerStatus, ServerType
 from app.models.server import Server
 
 logger = get_logger("servers")
@@ -109,14 +110,44 @@ class ProcessManager:
 
     # -- ciclo de vida -----------------------------------------------------
 
-    def _build_command(self, server: Server, jar_path: Path) -> list[str]:
+    def _launch_arguments(self, server: Server, root: Path) -> list[str]:
+        """Argumentos tras java+memoria según cómo se instaló el servidor.
+
+        Forge y NeoForge modernos no producen un server.jar: dejan las
+        librerías desplegadas y un fichero de argumentos (win/unix_args.txt)
+        que hay que pasar con ``@``. Las versiones antiguas de Forge sí dejan
+        un jar arrancable en la raíz.
+        """
+        if server.type.supports_mods and server.type is not ServerType.FABRIC:
+            args_name = "win_args.txt" if platform.system() == "Windows" else "unix_args.txt"
+            args_file = next(root.glob(f"libraries/net/*/*/*/{args_name}"), None)
+            if args_file is not None:
+                return [f"@{args_file.relative_to(root).as_posix()}", "nogui"]
+            legacy_jar = next(
+                (
+                    item
+                    for item in sorted(root.glob("*.jar"))
+                    if item.name not in {"installer.jar", "server.jar"}
+                ),
+                None,
+            )
+            if legacy_jar is not None:
+                return ["-jar", legacy_jar.name, "nogui"]
+
+        jar_path = root / (server.jar_file or "server.jar")
+        if not jar_path.is_file():
+            raise ValidationError(
+                "El servidor no tiene server.jar; su instalación no terminó bien.",
+                details={"jar": str(jar_path)},
+            )
+        return ["-jar", jar_path.name, "nogui"]
+
+    def _build_command(self, server: Server, root: Path) -> list[str]:
         return [
             server.java_path or "java",
             f"-Xms{server.memory_min_mb}M",
             f"-Xmx{server.memory_max_mb}M",
-            "-jar",
-            str(jar_path),
-            "nogui",
+            *self._launch_arguments(server, root),
         ]
 
     def start(self, server: Server) -> None:
@@ -130,19 +161,13 @@ class ProcessManager:
 
         settings = get_settings()
         root = settings.servers_dir / server.folder
-        jar_path = root / (server.jar_file or "server.jar")
-        if not jar_path.is_file():
-            raise ValidationError(
-                "El servidor no tiene server.jar; su instalación no terminó bien.",
-                details={"jar": str(jar_path)},
-            )
         if not server.java_path or not Path(server.java_path).is_file():
             raise ValidationError(
                 "No se encuentra el Java de este servidor; recrea el servidor.",
                 details={"java": server.java_path},
             )
 
-        command = self._build_command(server, jar_path)
+        command = self._build_command(server, root)
         logger.info("Iniciando %s: %s", server.name, " ".join(command))
         process = subprocess.Popen(  # noqa: S603 - comando construido internamente
             command,

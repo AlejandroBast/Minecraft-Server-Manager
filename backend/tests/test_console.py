@@ -20,6 +20,10 @@ from app.core.config import get_settings
 FAKE_SERVER = Path(__file__).parent / "fake_server.py"
 BASE_PAYLOAD = {"name": "Consolero", "type": "paper", "version": "1.21.4", "port": 25590}
 
+# Capturado antes de que la fixture lo sustituya, para los tests que necesitan
+# la validación real del comando de arranque.
+_REAL_BUILD_COMMAND = pm.ProcessManager._build_command
+
 
 @pytest.fixture(autouse=True)
 def java_falso(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -100,10 +104,20 @@ def test_no_se_puede_arrancar_dos_veces(client: TestClient) -> None:
     _wait_status(client, server["id"], "stopped")
 
 
-def test_arrancar_sin_jar_da_error_claro(client: TestClient) -> None:
+def test_arrancar_sin_jar_da_error_claro(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(pm.ProcessManager, "_build_command", _REAL_BUILD_COMMAND)
     server = client.post(
         "/api/v1/servers", json={**BASE_PAYLOAD, "name": "Sin Jar", "port": 25591}
     ).json()["server"]
+
+    from app.db.session import session_scope
+    from app.models import Server
+
+    with session_scope() as session:
+        session.get(Server, server["id"]).java_path = sys.executable
+
     response = client.post(f"/api/v1/servers/{server['id']}/start")
     assert response.status_code == 422
     assert "server.jar" in response.json()["message"]

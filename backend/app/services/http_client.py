@@ -36,6 +36,18 @@ def get_json(url: str) -> object:
         ) from error
 
 
+def get_text(url: str) -> str:
+    """Para fuentes que no hablan JSON (metadatos XML de Maven, hashes)."""
+    try:
+        response = httpx.get(url, timeout=_TIMEOUT, headers=_HEADERS, follow_redirects=True)
+        response.raise_for_status()
+        return response.text
+    except httpx.HTTPError as error:
+        raise ExternalServiceError(
+            "No se pudo consultar un servicio externo.", details={"url": url}
+        ) from error
+
+
 def download_file(
     url: str,
     destination: Path,

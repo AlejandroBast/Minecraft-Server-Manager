@@ -15,16 +15,17 @@ servidores de Minecraft Java Edition sin usar la consola ni editar ficheros a ma
 | 2 | Backend FastAPI (CRUD de servidores, sistema) | ✅ completada |
 | 3 | Frontend Next.js | ✅ completada |
 | 4 | Creación de servidores | ✅ completada |
-| 5 | Descarga automática (Java, jars, librerías) | ✅ completada¹ |
+| 5 | Descarga automática (Java, jars, librerías) | ✅ completada |
 | 6 | Consola en tiempo real (WebSockets) | ✅ completada |
 | 7 | Backups | ✅ completada |
-| 8 | Plugins y mods | pendiente |
+| 8 | Plugins y mods | ✅ completada |
 | 9 | Red (IP, puertos, UPnP, dominio) | pendiente |
 | 10 | Optimización y pruebas | pendiente |
 
-¹ Vanilla, Paper, Purpur y Fabric se descargan e instalan solos (jar + Java).
-Spigot no publica descargas (exige BuildTools) y Forge/NeoForge usan un
-instalador que hay que ejecutar: su automatización llega con la fase 8.
+Todos los tipos se instalan solos salvo **Spigot**, que no publica descargas
+(exige compilar con BuildTools) y se rechaza al crear explicando por qué; Paper
+es compatible con sus plugins. Forge y NeoForge descargan su instalador y lo
+ejecutan con el Java gestionado (fase 8).
 
 ## Arquitectura
 
@@ -138,6 +139,10 @@ cd frontend && npx tsc --noEmit && npx eslint .
 | GET | `/api/v1/servers/{id}/console` | Salida acumulada con índice incremental |
 | POST | `/api/v1/servers/{id}/console` | Envía un comando (validado) al proceso |
 | WS | `/api/v1/servers/{id}/console/ws` | Salida en tiempo real (sólo emite) |
+| GET | `/api/v1/servers/{id}/addons/{plugins\|mods}` | Lista los plugins o mods instalados |
+| POST | `/api/v1/servers/{id}/addons/{plugins\|mods}` | **Adjunta un .jar** desde la interfaz (multipart) |
+| PATCH | `/api/v1/servers/{id}/addons/{tipo}/{archivo}` | Activa o desactiva sin borrar |
+| DELETE | `/api/v1/servers/{id}/addons/{tipo}/{archivo}` | Elimina el archivo |
 | GET | `/api/v1/servers/{id}/backups` | Copias de seguridad del servidor |
 | POST | `/api/v1/servers/{id}/backups` | Crea una copia ZIP (en segundo plano) |
 | POST | `/api/v1/backups/{id}/restore` | Restaura una copia (servidor detenido) |
@@ -173,6 +178,11 @@ Reglas de negocio que aplica el backend:
   corromper el mundo. Al apagar la aplicación se detienen todos los procesos.
 - Los comandos de consola se validan (longitud, una sola línea, sin caracteres
   de control) y el WebSocket nunca los acepta: sólo emite salida.
+- Los plugins y mods se **adjuntan desde la interfaz** (arrastrar y soltar o
+  selector de archivos): el usuario nunca abre las carpetas del servidor. El
+  nombre se valida (sólo `.jar`, sin rutas ni nombres reservados de Windows),
+  hay límite de 200 MB y se escribe primero en `.part`. Desactivar no borra:
+  renombra a `.jar.disabled`, que los cargadores ignoran.
 - Los backups pueden hacerse con el servidor en marcha: se envía `save-off` y
   `save-all` antes de comprimir y `save-on` al terminar, el protocolo estándar
   para no corromper el mundo. La restauración exige el servidor detenido,

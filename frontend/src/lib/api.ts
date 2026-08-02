@@ -6,6 +6,8 @@
  */
 
 import type {
+  Addon,
+  AddonKind,
   AppSettings,
   Backup,
   ConsoleOutput,
@@ -91,11 +93,24 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   } catch {
     throw new NetworkError();
   }
+  return handleResponse<T>(response);
+}
 
+/** Subida multipart: el navegador fija solo el Content-Type con el boundary. */
+async function upload<T>(path: string, formData: FormData): Promise<T> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_URL}${path}`, { method: "POST", body: formData });
+  } catch {
+    throw new NetworkError();
+  }
+  return handleResponse<T>(response);
+}
+
+async function handleResponse<T>(response: Response): Promise<T> {
   if (response.status === 204) {
     return undefined as T;
   }
-
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     throw toApiError(response.status, body);
@@ -119,6 +134,22 @@ export const api = {
     request<{ sent: string }>(`/servers/${id}/console`, {
       method: "POST",
       body: JSON.stringify({ command }),
+    }),
+  listAddons: (serverId: number, kind: AddonKind) =>
+    request<Addon[]>(`/servers/${serverId}/addons/${kind}`),
+  uploadAddon: (serverId: number, kind: AddonKind, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return upload<Addon>(`/servers/${serverId}/addons/${kind}`, formData);
+  },
+  toggleAddon: (serverId: number, kind: AddonKind, filename: string, enabled: boolean) =>
+    request<Addon>(`/servers/${serverId}/addons/${kind}/${encodeURIComponent(filename)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled }),
+    }),
+  deleteAddon: (serverId: number, kind: AddonKind, filename: string) =>
+    request<void>(`/servers/${serverId}/addons/${kind}/${encodeURIComponent(filename)}`, {
+      method: "DELETE",
     }),
   listBackups: (serverId: number) => request<Backup[]>(`/servers/${serverId}/backups`),
   createBackup: (serverId: number, notes: string | null = null) =>
