@@ -39,10 +39,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     logger.info("%s v%s iniciado", config.app_name, config.app_version)
     yield
-    # Al apagar la aplicación no pueden quedar servidores Java huérfanos.
+    # Al apagar la aplicación no pueden quedar procesos huérfanos.
     from app.services.process_manager import manager
+    from app.services.tunnel_service import agent
 
     manager.stop_all()
+    agent.stop()
     logger.info("%s detenido", config.app_name)
 
 

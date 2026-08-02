@@ -16,6 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { TunnelSection } from "@/components/tunnel-section";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePolling } from "@/hooks/use-polling";
 import { ApiError, api } from "@/lib/api";
@@ -153,6 +154,10 @@ export function NetworkDialog({ open, onOpenChange }: NetworkDialogProps) {
                 </ul>
               )}
             </div>
+
+            <Separator />
+
+            <TunnelSection />
 
             <Separator />
 

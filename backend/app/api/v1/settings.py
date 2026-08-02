@@ -22,10 +22,18 @@ ALLOWED_KEYS = frozenset(DEFAULT_CONFIGURATIONS)
 PATH_KEYS = frozenset({"servers_dir", "backups_dir", "java_dir"})
 MAX_VALUE_LENGTH = 500
 
+# Secretos guardados en la misma tabla que las preferencias: se excluyen de la
+# lectura y no pueden escribirse por aquí (tienen su propio endpoint validado).
+SECRET_KEYS = frozenset({"playit_secret"})
+
+
+def _visible(values: dict[str, str | None]) -> dict[str, str | None]:
+    return {key: value for key, value in values.items() if key not in SECRET_KEYS}
+
 
 @router.get("", response_model=SettingsRead)
 def read_settings(db: DbSession) -> SettingsRead:
-    return SettingsRead(values=ConfigurationRepository(db).all_as_dict())
+    return SettingsRead(values=_visible(ConfigurationRepository(db).all_as_dict()))
 
 
 @router.put("", response_model=SettingsRead)
@@ -48,4 +56,4 @@ def update_settings(payload: SettingsUpdate, db: DbSession) -> SettingsRead:
     for key, value in payload.values.items():
         repository.set(key, value)
     db.commit()
-    return SettingsRead(values=repository.all_as_dict())
+    return SettingsRead(values=_visible(repository.all_as_dict()))

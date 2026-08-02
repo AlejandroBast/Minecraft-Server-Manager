@@ -197,6 +197,23 @@ export interface DnsInstructions {
   records: DnsRecord[];
 }
 
+export interface TunnelAddress {
+  name: string;
+  address: string;
+  port: number | null;
+  local_port: number | null;
+  active: boolean;
+}
+
+export interface TunnelStatus {
+  agent_installed: boolean;
+  secret_configured: boolean;
+  running: boolean;
+  setup_url: string;
+  addresses: TunnelAddress[];
+  notes: string[];
+}
+
 export interface PortActionResult {
   success: boolean;
   message: string;

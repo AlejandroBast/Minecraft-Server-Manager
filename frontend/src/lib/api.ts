@@ -23,6 +23,7 @@ import type {
   ServerStats,
   ServerType,
   SystemInfo,
+  TunnelStatus,
   VersionList,
 } from "@/lib/types";
 
@@ -170,6 +171,12 @@ export const api = {
   installProgress: (id: number) => request<InstallProgress>(`/servers/${id}/install`),
   serverStats: (id: number) => request<ServerStats>(`/servers/${id}/stats`),
   cleanup: () => request<CleanupResult>("/system/cleanup", { method: "POST" }),
+  tunnel: () => request<TunnelStatus>("/tunnel"),
+  saveTunnelSecret: (secret: string) =>
+    request<TunnelStatus>("/tunnel/secret", { method: "PUT", body: JSON.stringify({ secret }) }),
+  deleteTunnelSecret: () => request<void>("/tunnel/secret", { method: "DELETE" }),
+  startTunnel: () => request<TunnelStatus>("/tunnel/start", { method: "POST" }),
+  stopTunnel: () => request<TunnelStatus>("/tunnel/stop", { method: "POST" }),
   network: () => request<NetworkDiagnosis>("/network"),
   openPort: (port: number) =>
     request<PortActionResult>(`/network/ports/${port}/open`, { method: "POST" }),

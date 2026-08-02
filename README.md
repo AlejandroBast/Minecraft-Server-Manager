@@ -25,6 +25,7 @@ propia aplicación). 87 pruebas automáticas en el backend.
 | 8 | Plugins y mods | ✅ completada |
 | 9 | Red (IP, puertos, UPnP, dominio) | ✅ completada |
 | 10 | Optimización y pruebas | ✅ completada |
+| 11 | Acceso desde internet (túnel playit.gg) | ✅ completada |
 
 Todos los tipos se instalan solos salvo **Spigot**, que no publica descargas
 (exige compilar con BuildTools) y se rechaza al crear explicando por qué; Paper
@@ -155,6 +156,10 @@ cd frontend && npx tsc --noEmit && npx eslint .
 | DELETE | `/api/v1/backups/{id}` | Elimina la copia y su fichero |
 | GET | `/api/v1/downloads/versions/{tipo}` | Catálogo de versiones del tipo (o el motivo si no se descarga solo) |
 | GET | `/api/v1/downloads/java` | Runtimes de Java gestionados por la aplicación |
+| GET | `/api/v1/tunnel` | Estado del túnel y direcciones públicas asignadas |
+| PUT | `/api/v1/tunnel/secret` | Guarda la clave del agente (validada contra playit.gg) |
+| DELETE | `/api/v1/tunnel/secret` | Elimina la clave y detiene el túnel |
+| POST | `/api/v1/tunnel/{start\|stop}` | Arranca o detiene el agente |
 | GET | `/api/v1/network` | Diagnóstico: IP local y pública, CGNAT, UPnP y puertos |
 | POST | `/api/v1/network/ports/{puerto}/open` | Abre el puerto por UPnP (o explica cómo hacerlo a mano) |
 | POST | `/api/v1/network/ports/{puerto}/close` | Cierra el mapeo UPnP |
@@ -196,6 +201,15 @@ Reglas de negocio que aplica el backend:
 - Al arrancar, la aplicación **corrige los estados imposibles** heredados de un
   cierre inesperado (servidores «en línea» sin proceso, copias «en curso») y
   borra los restos de descargas cortadas.
+- Si hay CGNAT, la solución es el **túnel de playit.gg**, integrado en la app:
+  descarga el agente oficial (versión fijada y verificada por sha256), lo
+  ejecuta y muestra la dirección pública lista para copiar. Los jugadores no
+  instalan nada. La clave del agente la genera el usuario en su propia cuenta
+  de playit.gg; la aplicación nunca pide ni ve su contraseña, y esa clave
+  **nunca sale por la API** aunque comparta tabla con las preferencias.
+- Cloudflare **no** sirve para esto en su plan gratuito: su proxy sólo entiende
+  HTTP/HTTPS y Minecraft usa TCP en crudo. Sí es útil como DNS (nube gris)
+  apuntando a la dirección del túnel.
 - El diagnóstico de red detecta **CGNAT** por dos vías: comparando la IP que
   el router dice tener con la que ve internet, y comprobando si varios
   servicios externos te ven con IPs distintas (pool de salida del operador).
