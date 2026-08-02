@@ -7,9 +7,148 @@ servidores de Minecraft Java Edition sin usar la consola ni editar ficheros a ma
 - La aplicación **no limita** los recursos del equipo: sólo recomienda.
 - Cada servidor es un proceso independiente supervisado por el backend.
 
-**Proyecto completo**: las 10 fases están implementadas y verificadas contra un
-servidor de Minecraft real (Paper 1.21.4 con Temurin 21 descargado por la
-propia aplicación). 87 pruebas automáticas en el backend.
+**Proyecto completo**: las 11 fases están implementadas y verificadas contra un
+servidor de Minecraft real. 94 pruebas automáticas en el backend.
+
+---
+
+# Instalación
+
+## Requisitos previos
+
+Sólo hay que instalar tres cosas, y **Java no es una de ellas**: la aplicación
+descarga sola el runtime que necesite cada versión de Minecraft.
+
+| Programa | Versión mínima | Dónde |
+|---|---|---|
+| Python | 3.12 o superior | <https://www.python.org/downloads/> — marca **«Add python.exe to PATH»** al instalar |
+| Node.js | 20 o superior | <https://nodejs.org/> (versión LTS) |
+| Git | cualquiera | <https://git-scm.com/downloads> |
+
+Comprueba que están bien instalados abriendo una terminal (PowerShell) y
+escribiendo:
+
+```bash
+python --version
+```
+
+```bash
+node --version
+```
+
+Si alguno responde «no se reconoce», reinstálalo marcando la opción de añadirlo
+al PATH y **cierra y vuelve a abrir la terminal**.
+
+## Paso 1 — Descargar el proyecto
+
+```bash
+git clone https://github.com/AlejandroBast/Minecraft-Server-Manager.git
+```
+
+```bash
+cd Minecraft-Server-Manager
+```
+
+## Paso 2 — Preparar el backend
+
+Crea el entorno de Python e instala sus dependencias:
+
+```bash
+python -m venv backend/.venv
+```
+
+```bash
+backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
+```
+
+Tarda un par de minutos la primera vez. Si además quieres ejecutar las pruebas,
+usa `requirements-dev.txt` en lugar de `requirements.txt`.
+
+## Paso 3 — Preparar el frontend
+
+```bash
+cd frontend
+```
+
+```bash
+npm install
+```
+
+```bash
+cd ..
+```
+
+## Paso 4 — Arrancar la aplicación
+
+Hacen falta **dos terminales abiertas a la vez**. En la primera, el backend:
+
+```bash
+backend/.venv/Scripts/python.exe backend/run.py
+```
+
+Déjala abierta. En una segunda terminal, la interfaz:
+
+```bash
+npm --prefix frontend run dev
+```
+
+Abre <http://localhost:3000> en el navegador. Deberías ver el panel con los
+datos de tu equipo (CPU, RAM, disco, IP).
+
+> Cerrar esas terminales apaga la aplicación **y todos los servidores de
+> Minecraft que estén corriendo**, de forma limpia y guardando el mundo.
+
+## Paso 5 — Crear tu primer servidor
+
+1. Pulsa **Crear servidor**
+2. Ponle nombre y elige el tipo (**Paper** es la opción recomendada: rápido y
+   admite plugins)
+3. La lista de versiones se rellena sola; elige la que quieras
+4. Pulsa **Usar la recomendada** para que la memoria se ajuste a tu equipo
+5. **Crear servidor**
+
+La tarjeta aparecerá como «Instalando» con una barra de progreso: está
+descargando Java y el servidor. Cuando ponga **Detenido**, pulsa **Iniciar**.
+La primera vez tarda un poco porque genera el mundo. Cuando ponga **En línea**,
+ya se puede jugar.
+
+## Paso 6 — Que entren tus amigos
+
+**Desde tu propia casa (mismo wifi)**: les pasas tu IP local, la que aparece en
+la tarjeta **Red** del panel, con el puerto. Por ejemplo `192.168.1.50:25565`.
+
+**Desde fuera de tu casa**: abre **Red** en el panel. Si te avisa de que estás
+tras **CGNAT** (muy habitual con operadores de fibra), abrir puertos no servirá
+de nada y necesitas el túnel:
+
+1. En la sección **Acceso desde internet**, pulsa **Abrir playit.gg** y crea una
+   cuenta gratuita
+2. Verifica tu correo (playit no deja crear túneles sin verificar)
+3. Copia tu **clave de agente** y pégala en la app → **Guardar**
+4. Pulsa **Iniciar túnel**
+5. En playit.gg crea un túnel de tipo **Minecraft Java** apuntando a
+   `127.0.0.1` y **al mismo puerto que tu servidor**
+6. La dirección pública aparecerá en la app con botón de copiar. Eso es lo que
+   les pasas a tus amigos: la escriben tal cual en Minecraft, sin instalar nada
+
+## Uso diario
+
+Cada vez que quieras jugar, repite sólo el **Paso 4** (las dos terminales) y
+arranca el servidor desde el panel. La instalación de los pasos 1 a 3 se hace
+una única vez.
+
+## Si algo no funciona
+
+| Síntoma | Causa y solución |
+|---|---|
+| «No se puede conectar con el backend» en el panel | La primera terminal se cerró. Vuelve a ejecutar el comando del Paso 4 |
+| El servidor se queda en **Error** | Abre su tarjeta: el motivo aparece escrito. Suele ser la descarga interrumpida; elimínalo y créalo de nuevo |
+| «El puerto ya lo usa el servidor X» | Dos servidores no pueden compartir puerto. Usa 25566, 25567… |
+| Tus amigos no entran desde fuera | Comprueba en **Red** si hay CGNAT. Si lo hay, necesitas el túnel del Paso 6 |
+| Windows pregunta por el cortafuegos | Es normal la primera vez que arranca Java. Permite el acceso en redes privadas |
+| El antivirus bloquea la descarga de Java | Los runtimes vienen de Adoptium (Eclipse Temurin) y se verifican por sha256. Añade una excepción a la carpeta `downloads/` |
+
+---
 
 ## Estado
 
@@ -68,7 +207,7 @@ minecraft-server-manager/
 │   │   ├── models/     modelos ORM y enumeraciones
 │   │   ├── repositories/  acceso a datos
 │   │   ├── schemas/    esquemas Pydantic
-│   │   └── services/   servidores, descargas, backups, red
+│   │   └── services/   servidores, descargas, backups, red, túnel
 │   └── tests/
 ├── frontend/           Next.js 16 + Tailwind 4 + shadcn/ui
 │   └── src/
@@ -77,7 +216,7 @@ minecraft-server-manager/
 │       ├── hooks/      consulta periódica de la API
 │       └── lib/        cliente tipado, tipos del contrato y formateo
 ├── servers/            un directorio por servidor creado
-├── downloads/          jars, librerías y runtimes de Java
+├── downloads/          jars, runtimes de Java y agente del túnel
 ├── backups/            copias comprimidas en ZIP
 ├── database/           manager.db (SQLite)
 ├── logs/               app / servers / downloads / console
@@ -85,45 +224,26 @@ minecraft-server-manager/
 └── temp/               ficheros intermedios
 ```
 
-## Puesta en marcha (backend)
+## Desarrollo
 
-```bash
-cd backend
-python -m venv .venv
-.venv/Scripts/python.exe -m pip install -r requirements-dev.txt
-.venv/Scripts/python.exe run.py
-```
-
-- API: <http://127.0.0.1:8000/api/v1/health>
-- Documentación interactiva: <http://127.0.0.1:8000/docs>
-
-Pruebas:
+Pruebas del backend (necesita `requirements-dev.txt`):
 
 ```bash
 backend/.venv/Scripts/python.exe -m pytest
 ```
 
-## Puesta en marcha (frontend)
-
-Con el backend en marcha, en otra terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Interfaz: <http://localhost:3000>
-
-El navegador llama directamente a la API (`http://127.0.0.1:8000/api/v1`). Todo
-corre en el mismo equipo, así que un proxy en Next sólo añadiría latencia. Para
-apuntar a otra dirección, define `NEXT_PUBLIC_API_URL`.
-
-Comprobaciones:
+Comprobaciones del frontend:
 
 ```bash
 cd frontend && npx tsc --noEmit && npx eslint .
 ```
+
+Documentación interactiva de la API con el backend arrancado:
+<http://127.0.0.1:8000/docs>
+
+El navegador llama directamente a la API (`http://127.0.0.1:8000/api/v1`). Todo
+corre en el mismo equipo, así que un proxy en Next sólo añadiría latencia. Para
+apuntar a otra dirección, define `NEXT_PUBLIC_API_URL`.
 
 ## API disponible
 
@@ -227,15 +347,9 @@ Reglas de negocio que aplica el backend:
   valida cada entrada del ZIP contra el sandbox (anti zip-slip) y reemplaza la
   carpeta por intercambio: nunca queda una restauración a medias.
 
-## Configuración
+## Configuración avanzada
 
-Copia `.env.example` a `.env`. Todas las claves usan el prefijo `MSM_`
-(`MSM_PORT`, `MSM_SERVERS_DIR`, `MSM_LOG_LEVEL`, …). Las preferencias de usuario
-(idioma, tema, rutas) se guardan además en la tabla `configurations`.
-
-## Requisitos
-
-- Python 3.12 o superior
-- Node.js 20 o superior (a partir de la fase 3)
-- Java: **no es necesario instalarlo**; la aplicación descarga el runtime
-  adecuado para cada versión de Minecraft (fase 5).
+Copia `.env.example` a `.env` para cambiar puertos o rutas. Todas las claves
+usan el prefijo `MSM_` (`MSM_PORT`, `MSM_SERVERS_DIR`, `MSM_LOG_LEVEL`, …). Las
+preferencias de usuario (idioma, tema, rutas) se guardan además en la tabla
+`configurations` de la base de datos.
