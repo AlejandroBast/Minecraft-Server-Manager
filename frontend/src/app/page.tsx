@@ -1,8 +1,10 @@
 "use client";
 
-import { Boxes, RefreshCw, ServerOff } from "lucide-react";
+import { Boxes, Globe, RefreshCw, ServerOff } from "lucide-react";
+import { useState } from "react";
 
 import { CreateServerDialog } from "@/components/create-server-dialog";
+import { NetworkDialog } from "@/components/network-dialog";
 import { ServerCard } from "@/components/server-card";
 import { SystemPanel } from "@/components/system-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -17,6 +19,7 @@ const SYSTEM_INTERVAL_MS = 5000;
 const RECOMMENDATIONS_INTERVAL_MS = 30000;
 
 export default function DashboardPage() {
+  const [networkOpen, setNetworkOpen] = useState(false);
   const servers = usePolling(api.listServers, SERVERS_INTERVAL_MS);
   const system = usePolling(api.systemInfo, SYSTEM_INTERVAL_MS);
   const recommendations = usePolling(api.recommendations, RECOMMENDATIONS_INTERVAL_MS);
@@ -41,6 +44,9 @@ export default function DashboardPage() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" aria-label="Actualizar" onClick={refreshAll}>
             <RefreshCw />
+          </Button>
+          <Button variant="outline" onClick={() => setNetworkOpen(true)}>
+            <Globe /> Red
           </Button>
           <ThemeToggle />
           <CreateServerDialog recommendations={recommendations.data ?? []} onCreated={refreshAll} />
@@ -103,6 +109,8 @@ export default function DashboardPage() {
           </section>
         </div>
       )}
+
+      {networkOpen && <NetworkDialog open={networkOpen} onOpenChange={setNetworkOpen} />}
     </main>
   );
 }

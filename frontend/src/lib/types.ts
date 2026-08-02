@@ -149,6 +149,39 @@ export interface InstallProgress {
   detail: string;
 }
 
+export interface PortStatus {
+  port: number;
+  listening: boolean;
+  upnp_mapped: boolean;
+}
+
+export interface NetworkDiagnosis {
+  local_ip: string;
+  public_ip: string | null;
+  router_external_ip: string | null;
+  upnp_available: boolean;
+  behind_carrier_nat: boolean;
+  ports: PortStatus[];
+  notes: string[];
+}
+
+export interface DnsRecord {
+  type: string;
+  name: string;
+  value: string;
+  explanation: string;
+}
+
+export interface DnsInstructions {
+  domain: string;
+  records: DnsRecord[];
+}
+
+export interface PortActionResult {
+  success: boolean;
+  message: string;
+}
+
 export type AddonKind = "plugins" | "mods";
 
 export interface Addon {

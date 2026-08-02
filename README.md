@@ -19,7 +19,7 @@ servidores de Minecraft Java Edition sin usar la consola ni editar ficheros a ma
 | 6 | Consola en tiempo real (WebSockets) | ✅ completada |
 | 7 | Backups | ✅ completada |
 | 8 | Plugins y mods | ✅ completada |
-| 9 | Red (IP, puertos, UPnP, dominio) | pendiente |
+| 9 | Red (IP, puertos, UPnP, dominio) | ✅ completada |
 | 10 | Optimización y pruebas | pendiente |
 
 Todos los tipos se instalan solos salvo **Spigot**, que no publica descargas
@@ -149,6 +149,10 @@ cd frontend && npx tsc --noEmit && npx eslint .
 | DELETE | `/api/v1/backups/{id}` | Elimina la copia y su fichero |
 | GET | `/api/v1/downloads/versions/{tipo}` | Catálogo de versiones del tipo (o el motivo si no se descarga solo) |
 | GET | `/api/v1/downloads/java` | Runtimes de Java gestionados por la aplicación |
+| GET | `/api/v1/network` | Diagnóstico: IP local y pública, CGNAT, UPnP y puertos |
+| POST | `/api/v1/network/ports/{puerto}/open` | Abre el puerto por UPnP (o explica cómo hacerlo a mano) |
+| POST | `/api/v1/network/ports/{puerto}/close` | Cierra el mapeo UPnP |
+| POST | `/api/v1/network/dns` | Registros DNS que crear para un dominio propio |
 | GET | `/api/v1/settings` | Preferencias de la aplicación |
 | PUT | `/api/v1/settings` | Modifica preferencias (sólo claves conocidas) |
 
@@ -178,6 +182,12 @@ Reglas de negocio que aplica el backend:
   corromper el mundo. Al apagar la aplicación se detienen todos los procesos.
 - Los comandos de consola se validan (longitud, una sola línea, sin caracteres
   de control) y el WebSocket nunca los acepta: sólo emite salida.
+- El diagnóstico de red detecta **CGNAT** por dos vías: comparando la IP que
+  el router dice tener con la que ve internet, y comprobando si varios
+  servicios externos te ven con IPs distintas (pool de salida del operador).
+  Si hay CGNAT, abrir puertos no sirve y se propone un túnel: mejor decirlo
+  que dejar al usuario peleándose con el router. UPnP se implementa sin
+  dependencias externas (SSDP + SOAP) para no exigir compiladores al instalar.
 - Los plugins y mods se **adjuntan desde la interfaz** (arrastrar y soltar o
   selector de archivos): el usuario nunca abre las carpetas del servidor. El
   nombre se valida (sólo `.jar`, sin rutas ni nombres reservados de Windows),

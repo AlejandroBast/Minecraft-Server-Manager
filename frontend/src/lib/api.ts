@@ -11,7 +11,10 @@ import type {
   AppSettings,
   Backup,
   ConsoleOutput,
+  DnsInstructions,
   InstallProgress,
+  NetworkDiagnosis,
+  PortActionResult,
   Recommendation,
   Server,
   ServerCreatePayload,
@@ -163,6 +166,16 @@ export const api = {
     request<void>(`/backups/${backupId}`, { method: "DELETE" }),
   versions: (type: ServerType) => request<VersionList>(`/downloads/versions/${type}`),
   installProgress: (id: number) => request<InstallProgress>(`/servers/${id}/install`),
+  network: () => request<NetworkDiagnosis>("/network"),
+  openPort: (port: number) =>
+    request<PortActionResult>(`/network/ports/${port}/open`, { method: "POST" }),
+  closePort: (port: number) =>
+    request<PortActionResult>(`/network/ports/${port}/close`, { method: "POST" }),
+  dnsInstructions: (domain: string, port: number) =>
+    request<DnsInstructions>("/network/dns", {
+      method: "POST",
+      body: JSON.stringify({ domain, port }),
+    }),
   systemInfo: () => request<SystemInfo>("/system/info"),
   recommendations: () => request<Recommendation[]>("/system/recommendations"),
   settings: () => request<AppSettings>("/settings"),
