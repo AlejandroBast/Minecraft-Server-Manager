@@ -138,6 +138,26 @@ def test_comando_invalido_se_rechaza(client: TestClient) -> None:
     _wait_status(client, server["id"], "stopped")
 
 
+def test_wait_for_output_no_pierde_respuestas_rapidas(client: TestClient) -> None:
+    """La espera debe partir del índice previo al comando, no del posterior."""
+    server = _create_ready(client)
+    client.post(f"/api/v1/servers/{server['id']}/start")
+    _wait_status(client, server["id"], "online")
+
+    indice = pm.manager.next_output_index(server["id"])
+    pm.manager.send_command(server["id"], "eco rapido")
+    time.sleep(1.0)  # la respuesta ya está en el buffer antes de esperarla
+
+    assert pm.manager.wait_for_output(
+        server["id"], "ejecutado: eco rapido", timeout=2, since=indice
+    )
+    # Sin el índice previo, la misma espera no encontraría nada.
+    assert not pm.manager.wait_for_output(server["id"], "ejecutado: eco rapido", timeout=1)
+
+    client.post(f"/api/v1/servers/{server['id']}/stop")
+    _wait_status(client, server["id"], "stopped")
+
+
 def test_comando_con_servidor_parado_da_conflicto(client: TestClient) -> None:
     server = _create_ready(client)
     response = client.post(f"/api/v1/servers/{server['id']}/console", json={"command": "list"})

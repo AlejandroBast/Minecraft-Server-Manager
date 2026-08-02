@@ -80,6 +80,14 @@ class ProcessManager:
             entry = self._entries.get(server_id)
         return entry is not None and entry.process.poll() is None
 
+    def pid(self, server_id: int) -> int | None:
+        """PID del proceso Java, para medir su consumo con psutil."""
+        with self._lock:
+            entry = self._entries.get(server_id)
+        if entry is None or entry.process.poll() is not None:
+            return None
+        return entry.process.pid
+
     def uptime_seconds(self, server_id: int) -> float | None:
         with self._lock:
             entry = self._entries.get(server_id)
@@ -94,12 +102,22 @@ class ProcessManager:
             return [], 0
         return entry.since(index)
 
-    def wait_for_output(
-        self, server_id: int, pattern: str, *, timeout: float = 10.0
-    ) -> bool:
-        """Espera a que aparezca ``pattern`` en líneas nuevas de la consola."""
-        compiled = re.compile(pattern)
+    def next_output_index(self, server_id: int) -> int:
+        """Índice de la próxima línea, para esperar salida a partir de aquí."""
         _, index = self.output_since(server_id, 0)
+        return index
+
+    def wait_for_output(
+        self, server_id: int, pattern: str, *, timeout: float = 10.0, since: int | None = None
+    ) -> bool:
+        """Espera a que aparezca ``pattern`` en la consola desde ``since``.
+
+        Quien envía un comando debe capturar el índice **antes** de enviarlo y
+        pasarlo aquí: si se tomara la referencia después, una respuesta rápida
+        ya estaría en el buffer y la espera la pasaría por alto.
+        """
+        compiled = re.compile(pattern)
+        index = since if since is not None else self.next_output_index(server_id)
         deadline = time.monotonic() + timeout
         while time.monotonic() < deadline:
             lines, index = self.output_since(server_id, index)

@@ -3,8 +3,11 @@
 import {
   Archive,
   Cpu,
+  Gauge,
   Globe,
+  HardDrive,
   Loader2,
+  MemoryStick,
   Play,
   Puzzle,
   RotateCcw,
@@ -45,7 +48,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { usePolling } from "@/hooks/use-polling";
 import { ApiError, api } from "@/lib/api";
-import { formatMemory, formatUptime } from "@/lib/format";
+import { formatBytes, formatMemory, formatUptime } from "@/lib/format";
 import type { Server } from "@/lib/types";
 
 const TYPE_LABELS: Record<Server["type"], string> = {
@@ -130,6 +133,11 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
           </div>
 
           {server.status === "installing" && <InstallProgressRow serverId={server.id} />}
+
+          {/* Sólo se consultan estadísticas de los servidores en marcha. */}
+          {(server.status === "online" || server.status === "starting") && (
+            <LiveStats serverId={server.id} />
+          )}
 
           {server.status === "error" && server.last_error && (
             <div className="flex items-start gap-2 rounded-lg border border-destructive/40 bg-destructive/10 p-2.5 text-xs text-destructive">
@@ -265,6 +273,58 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
         />
       )}
     </>
+  );
+}
+
+function LiveStats({ serverId }: { serverId: number }) {
+  const { data } = usePolling(() => api.serverStats(serverId), 5000);
+  if (!data || !data.running) return null;
+
+  return (
+    <dl className="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg border border-border bg-muted/40 p-2.5 text-xs">
+      <StatRow icon={<Cpu className="size-3.5" />} label="CPU">
+        {data.cpu_percent !== null ? `${data.cpu_percent}%` : "—"}
+      </StatRow>
+      <StatRow icon={<MemoryStick className="size-3.5" />} label="RAM">
+        {data.memory_mb !== null
+          ? `${formatMemory(Math.round(data.memory_mb))}${
+              data.memory_percent_of_limit !== null
+                ? ` (${Math.round(data.memory_percent_of_limit)}%)`
+                : ""
+            }`
+          : "—"}
+      </StatRow>
+      <StatRow icon={<Users className="size-3.5" />} label="Jugadores">
+        {data.online_players !== null ? `${data.online_players}/${data.max_players}` : "—"}
+      </StatRow>
+      <StatRow icon={<Gauge className="size-3.5" />} label="TPS">
+        {data.tps !== null ? data.tps.toFixed(1) : "—"}
+      </StatRow>
+      <StatRow icon={<HardDrive className="size-3.5" />} label="Mundo">
+        {formatBytes(data.world_size_bytes)}
+      </StatRow>
+      <StatRow icon={<Timer className="size-3.5" />} label="Activo">
+        {data.uptime_seconds !== null ? formatUptime(data.uptime_seconds) : "—"}
+      </StatRow>
+    </dl>
+  );
+}
+
+function StatRow({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-2 text-muted-foreground">
+      {icon}
+      <dt className="sr-only">{label}</dt>
+      <dd className="text-foreground tabular-nums">{children}</dd>
+    </div>
   );
 }
 

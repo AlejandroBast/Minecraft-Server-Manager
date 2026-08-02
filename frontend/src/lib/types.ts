@@ -149,6 +149,26 @@ export interface InstallProgress {
   detail: string;
 }
 
+export interface ServerStats {
+  server_id: number;
+  running: boolean;
+  cpu_percent: number | null;
+  memory_mb: number | null;
+  memory_percent_of_limit: number | null;
+  uptime_seconds: number | null;
+  online_players: number | null;
+  max_players: number | null;
+  tps: number | null;
+  world_size_bytes: number;
+  disk_free_gb: number;
+}
+
+export interface CleanupResult {
+  orphan_backups_removed: number;
+  bytes_freed: number;
+  temp_files_removed: number;
+}
+
 export interface PortStatus {
   port: number;
   listening: boolean;

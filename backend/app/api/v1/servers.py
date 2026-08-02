@@ -8,6 +8,8 @@ from app.api.deps import DbSession
 from app.core.exceptions import NotFoundError
 from app.schemas.downloads import InstallProgressRead
 from app.schemas.server import ServerCreate, ServerCreated, ServerRead, ServerUpdate
+from app.schemas.stats import ServerStatsRead
+from app.services import stats_service
 from app.services.download_service import run_full_install
 from app.services.install_tracker import tracker
 from app.services.process_manager import manager
@@ -44,6 +46,12 @@ def get_server(server_id: int, db: DbSession) -> ServerRead:
     return _with_uptime(ServerService(db).get_server(server_id))
 
 
+@router.get("/{server_id}/stats", response_model=ServerStatsRead)
+def server_stats(server_id: int, db: DbSession) -> ServerStatsRead:
+    server = ServerService(db).get_server(server_id)
+    return ServerStatsRead.model_validate(stats_service.collect(server))
+
+
 @router.get("/{server_id}/install", response_model=InstallProgressRead)
 def install_progress(server_id: int, db: DbSession) -> InstallProgressRead:
     ServerService(db).get_server(server_id)  # 404 si no existe
@@ -66,3 +74,5 @@ def update_server(server_id: int, payload: ServerUpdate, db: DbSession) -> Serve
 @router.delete("/{server_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_server(server_id: int, db: DbSession) -> None:
     ServerService(db).delete_server(server_id)
+    stats_service.forget(server_id)
+    tracker.clear(server_id)

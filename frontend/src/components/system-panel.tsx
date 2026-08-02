@@ -1,7 +1,7 @@
 "use client";
 
-import { Coffee, Cpu, HardDrive, MemoryStick, Network } from "lucide-react";
-import type { ReactNode } from "react";
+import { Coffee, Cpu, HardDrive, MemoryStick, Network, Sparkles } from "lucide-react";
+import { useState, type ReactNode } from "react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatFrequency, formatGigabytes, formatMemory, formatPercent } from "@/lib/format";
+import { ApiError, api } from "@/lib/api";
+import {
+  formatBytes,
+  formatFrequency,
+  formatGigabytes,
+  formatMemory,
+  formatPercent,
+} from "@/lib/format";
 import type { SystemInfo } from "@/lib/types";
 
 interface SystemPanelProps {
@@ -113,9 +120,41 @@ export function SystemPanel({ info, loading }: SystemPanelProps) {
           <span className="ml-auto text-xs text-muted-foreground">
             {info.os} {info.architecture}
           </span>
+          <CleanupButton />
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+/** Borra copias huérfanas y restos de descargas cortadas. */
+function CleanupButton() {
+  const [busy, setBusy] = useState(false);
+
+  return (
+    <Button
+      variant="ghost"
+      size="xs"
+      disabled={busy}
+      onClick={async () => {
+        setBusy(true);
+        try {
+          const result = await api.cleanup();
+          const total = result.orphan_backups_removed + result.temp_files_removed;
+          toast.success(
+            total === 0
+              ? "No había nada que limpiar."
+              : `${total} archivo(s) eliminado(s), ${formatBytes(result.bytes_freed)} liberados.`,
+          );
+        } catch (error) {
+          toast.error(error instanceof ApiError ? error.message : "No se pudo limpiar.");
+        } finally {
+          setBusy(false);
+        }
+      }}
+    >
+      <Sparkles /> Limpiar archivos sueltos
+    </Button>
   );
 }
 

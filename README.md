@@ -7,6 +7,10 @@ servidores de Minecraft Java Edition sin usar la consola ni editar ficheros a ma
 - La aplicación **no limita** los recursos del equipo: sólo recomienda.
 - Cada servidor es un proceso independiente supervisado por el backend.
 
+**Proyecto completo**: las 10 fases están implementadas y verificadas contra un
+servidor de Minecraft real (Paper 1.21.4 con Temurin 21 descargado por la
+propia aplicación). 87 pruebas automáticas en el backend.
+
 ## Estado
 
 | Fase | Contenido | Estado |
@@ -20,7 +24,7 @@ servidores de Minecraft Java Edition sin usar la consola ni editar ficheros a ma
 | 7 | Backups | ✅ completada |
 | 8 | Plugins y mods | ✅ completada |
 | 9 | Red (IP, puertos, UPnP, dominio) | ✅ completada |
-| 10 | Optimización y pruebas | pendiente |
+| 10 | Optimización y pruebas | ✅ completada |
 
 Todos los tipos se instalan solos salvo **Spigot**, que no publica descargas
 (exige compilar con BuildTools) y se rechaza al crear explicando por qué; Paper
@@ -132,7 +136,9 @@ cd frontend && npx tsc --noEmit && npx eslint .
 | DELETE | `/api/v1/servers/{id}` | Elimina un servidor detenido |
 | GET | `/api/v1/system/info` | CPU, RAM, disco, Java, IP local |
 | GET | `/api/v1/system/recommendations` | Jugadores y memoria estimados por tipo de servidor |
+| GET | `/api/v1/servers/{id}/stats` | CPU, RAM, jugadores, TPS, tamaño del mundo |
 | GET | `/api/v1/servers/{id}/install` | Progreso de la instalación en curso |
+| POST | `/api/v1/system/cleanup` | Borra copias huérfanas y temporales sueltos |
 | POST | `/api/v1/servers/{id}/start` | Arranca el proceso Java del servidor |
 | POST | `/api/v1/servers/{id}/stop` | Detención limpia (`stop` por stdin; kill sólo si no responde) |
 | POST | `/api/v1/servers/{id}/restart` | Reinicio (parar y volver a arrancar) |
@@ -182,6 +188,14 @@ Reglas de negocio que aplica el backend:
   corromper el mundo. Al apagar la aplicación se detienen todos los procesos.
 - Los comandos de consola se validan (longitud, una sola línea, sin caracteres
   de control) y el WebSocket nunca los acepta: sólo emite salida.
+- Los jugadores conectados se leen con el **Server List Ping**, el mismo
+  protocolo que usa el cliente de Minecraft: es la fuente autoritativa y vale
+  igual para Vanilla, Paper, Fabric o Forge (analizar el log sería frágil).
+  El TPS se pregunta con el comando `tps` sólo en la familia Paper, cacheado
+  30 s para no llenar la consola de comandos automáticos.
+- Al arrancar, la aplicación **corrige los estados imposibles** heredados de un
+  cierre inesperado (servidores «en línea» sin proceso, copias «en curso») y
+  borra los restos de descargas cortadas.
 - El diagnóstico de red detecta **CGNAT** por dos vías: comparando la IP que
   el router dice tener con la que ve internet, y comprobando si varios
   servicios externos te ven con IPs distintas (pool de salida del operador).

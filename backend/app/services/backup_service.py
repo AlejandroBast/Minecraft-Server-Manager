@@ -90,10 +90,14 @@ def run_backup(backup_id: int) -> None:
         was_running = manager.is_running(server.id)
         try:
             if was_running:
-                # Congelar la escritura del mundo mientras se copia.
+                # Congelar la escritura del mundo mientras se copia. El índice
+                # se toma antes de enviar para no perderse una respuesta rápida.
+                index = manager.next_output_index(server.id)
                 manager.send_command(server.id, "save-off")
                 manager.send_command(server.id, "save-all")
-                manager.wait_for_output(server.id, r"Saved the game|save-all", timeout=15)
+                manager.wait_for_output(
+                    server.id, r"Saved the game|save-all", timeout=15, since=index
+                )
 
             size = _zip_directory(source, destination)
             backup.size_bytes = size

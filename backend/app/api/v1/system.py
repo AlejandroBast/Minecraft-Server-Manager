@@ -6,7 +6,9 @@ from fastapi import APIRouter
 
 from app.api.deps import AppSettings
 from app.models.enums import ServerType
+from app.schemas.stats import CleanupResultRead
 from app.schemas.system import RecommendationRead, SystemInfoRead
+from app.services.maintenance import cleanup
 from app.services.recommendations import recommend
 from app.services.system_info import get_system_info, to_hardware_snapshot
 
@@ -17,6 +19,12 @@ router = APIRouter(prefix="/system", tags=["system"])
 def system_info(config: AppSettings) -> SystemInfoRead:
     info = get_system_info(config.servers_dir, config.java_dir)
     return SystemInfoRead.model_validate(info)
+
+
+@router.post("/cleanup", response_model=CleanupResultRead)
+def run_cleanup(config: AppSettings) -> CleanupResultRead:
+    """Elimina copias huérfanas y ficheros temporales de descargas cortadas."""
+    return CleanupResultRead.model_validate(cleanup(config))
 
 
 @router.get("/recommendations", response_model=list[RecommendationRead])

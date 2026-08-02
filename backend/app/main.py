@@ -29,6 +29,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     from app.db.init_db import init_db
 
     init_db()
+
+    # Tras un cierre inesperado quedan estados imposibles («en línea» sin
+    # proceso) y restos de descargas: se corrigen antes de atender peticiones.
+    from app.services.maintenance import cleanup, recover_state
+
+    recover_state()
+    cleanup(config)
+
     logger.info("%s v%s iniciado", config.app_name, config.app_version)
     yield
     # Al apagar la aplicación no pueden quedar servidores Java huérfanos.
