@@ -62,6 +62,11 @@ def create_app(config: Settings | None = None) -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=config.cors_origins,
+        # Se acepta cualquier puerto de localhost: si el 3000 está ocupado por
+        # otro programa, Next arranca en otro y con una lista fija la interfaz
+        # se quedaba sin backend mostrando un error engañoso. La API sólo
+        # escucha en 127.0.0.1, así que no amplía el alcance real.
+        allow_origin_regex=config.cors_origin_regex,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

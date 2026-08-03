@@ -18,6 +18,7 @@ from app.api.v1 import (
     servers,
     settings,
     system,
+    tailscale,
     tunnel,
 )
 
@@ -29,6 +30,7 @@ api_router.include_router(backups.router)
 api_router.include_router(addons.router)
 api_router.include_router(network.router)
 api_router.include_router(tunnel.router)
+api_router.include_router(tailscale.router)
 api_router.include_router(system.router)
 api_router.include_router(settings.router)
 api_router.include_router(downloads.router)

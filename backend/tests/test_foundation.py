@@ -47,6 +47,18 @@ def test_relaciones_resuelven() -> None:
     assert Backup.server.property.mapper.class_ is Server
 
 
+def test_cors_admite_cualquier_puerto_de_localhost() -> None:
+    """Si el 3000 está ocupado, la interfaz arranca en otro puerto y debe valer."""
+    with TestClient(app) as client:
+        for origen in ("http://localhost:3000", "http://localhost:50245", "http://127.0.0.1:8080"):
+            response = client.get("/api/v1/health", headers={"Origin": origen})
+            assert response.headers.get("access-control-allow-origin") == origen, origen
+
+        # Un origen externo sigue sin estar permitido.
+        response = client.get("/api/v1/health", headers={"Origin": "https://sitio-ajeno.com"})
+        assert "access-control-allow-origin" not in response.headers
+
+
 def test_health() -> None:
     with TestClient(app) as client:
         response = client.get("/api/v1/health")

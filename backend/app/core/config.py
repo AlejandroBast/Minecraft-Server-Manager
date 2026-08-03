@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     port: int = 8000
     api_prefix: str = "/api/v1"
     cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:3000"])
+    # Cualquier puerto de localhost: la interfaz puede acabar en uno distinto
+    # del 3000 si ese está ocupado, y debe seguir hablando con la API.
+    cors_origin_regex: str = r"^http://(localhost|127\.0\.0\.1)(:\d+)?$"
 
     project_root: Path = PROJECT_ROOT
     servers_dir: Path = PROJECT_ROOT / "servers"

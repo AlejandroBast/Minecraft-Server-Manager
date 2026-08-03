@@ -14,6 +14,7 @@ import type {
   ConsoleOutput,
   DnsInstructions,
   InstallProgress,
+  LoginStarted,
   NetworkDiagnosis,
   PortActionResult,
   Recommendation,
@@ -23,6 +24,7 @@ import type {
   ServerStats,
   ServerType,
   SystemInfo,
+  TailscaleStatus,
   TunnelStatus,
   VersionList,
 } from "@/lib/types";
@@ -172,6 +174,11 @@ export const api = {
   installProgress: (id: number) => request<InstallProgress>(`/servers/${id}/install`),
   serverStats: (id: number) => request<ServerStats>(`/servers/${id}/stats`),
   cleanup: () => request<CleanupResult>("/system/cleanup", { method: "POST" }),
+  tailscale: () => request<TailscaleStatus>("/tailscale"),
+  installTailscale: () => request<TailscaleStatus>("/tailscale/install", { method: "POST" }),
+  tailscaleLogin: () => request<LoginStarted>("/tailscale/login", { method: "POST" }),
+  tailscaleDisconnect: () =>
+    request<TailscaleStatus>("/tailscale/disconnect", { method: "POST" }),
   tunnel: () => request<TunnelStatus>("/tunnel"),
   saveTunnelSecret: (secret: string) =>
     request<TunnelStatus>("/tunnel/secret", { method: "PUT", body: JSON.stringify({ secret }) }),

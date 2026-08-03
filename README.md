@@ -141,7 +141,7 @@ una única vez.
 
 | Síntoma | Causa y solución |
 |---|---|
-| «No se puede conectar con el backend» en el panel | La primera terminal se cerró. Vuelve a ejecutar el comando del Paso 4 |
+| «No se puede conectar con el backend» en el panel | La primera terminal se cerró. Vuelve a ejecutar el comando del Paso 4. Si el puerto 3000 estaba ocupado, la interfaz arranca en otro y **también funciona**: mira en la terminal qué dirección indica |
 | El servidor se queda en **Error** | Abre su tarjeta: el motivo aparece escrito. Si la descarga se cortó, el botón pasa a ser **Reintentar instalación** — púlsalo y no pierdes ni el servidor ni el mundo |
 | «Este servidor no llegó a instalarse» al iniciar | La descarga de Java o del jar no terminó. Usa **Reintentar instalación** en esa misma tarjeta |
 | «El puerto ya lo usa el servidor X» | Dos servidores no pueden compartir puerto. Usa 25566, 25567… |
@@ -282,6 +282,10 @@ apuntar a otra dirección, define `NEXT_PUBLIC_API_URL`.
 | PUT | `/api/v1/tunnel/secret` | Guarda la clave del agente (validada contra playit.gg) |
 | DELETE | `/api/v1/tunnel/secret` | Elimina la clave y detiene el túnel |
 | POST | `/api/v1/tunnel/{start\|stop}` | Arranca o detiene el agente |
+| GET | `/api/v1/tailscale` | Estado de la red privada y si cada amigo va directo o por relé |
+| POST | `/api/v1/tailscale/install` | Descarga e instala Tailscale (firma verificada) |
+| POST | `/api/v1/tailscale/login` | Devuelve el enlace de acceso para abrir en el navegador |
+| POST | `/api/v1/tailscale/disconnect` | Desconecta la red privada |
 | GET | `/api/v1/network` | Diagnóstico: IP local y pública, CGNAT, UPnP y puertos |
 | POST | `/api/v1/network/ports/{puerto}/open` | Abre el puerto por UPnP (o explica cómo hacerlo a mano) |
 | POST | `/api/v1/network/ports/{puerto}/close` | Cierra el mapeo UPnP |
@@ -332,6 +336,13 @@ Reglas de negocio que aplica el backend:
   instalan nada. La clave del agente la genera el usuario en su propia cuenta
   de playit.gg; la aplicación nunca pide ni ve su contraseña, y esa clave
   **nunca sale por la API** aunque comparta tabla con las preferencias.
+- Como alternativa de baja latencia existe **Tailscale**, también integrado: la
+  aplicación descarga el instalador oficial, **verifica su firma digital** (en
+  vez de fijar un hash, porque se actualiza a menudo) y lo instala en silencio;
+  el acceso se hace con un botón que abre la web de Tailscale. La interfaz
+  indica, amigo por amigo, si la conexión es **directa** (ping bajo) o **por
+  relé** (parecido al túnel): ese es el dato que dice si compensa. El precio es
+  que cada amigo instala Tailscale una vez.
 - Cloudflare **no** sirve para esto en su plan gratuito: su proxy sólo entiende
   HTTP/HTTPS y Minecraft usa TCP en crudo. Sí es útil como DNS (nube gris)
   apuntando a la dirección del túnel.

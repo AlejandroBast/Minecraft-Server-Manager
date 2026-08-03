@@ -215,6 +215,32 @@ export interface TunnelStatus {
   notes: string[];
 }
 
+export interface TailscalePeer {
+  name: string;
+  ip: string;
+  online: boolean;
+  direct: boolean;
+  relay: string | null;
+  os: string;
+}
+
+export interface TailscaleStatus {
+  installed: boolean;
+  running: boolean;
+  needs_login: boolean;
+  own_ip: string | null;
+  hostname: string | null;
+  login_url: string | null;
+  invite_url: string;
+  peers: TailscalePeer[];
+  notes: string[];
+}
+
+export interface LoginStarted {
+  login_url: string | null;
+  message: string;
+}
+
 export interface PortActionResult {
   success: boolean;
   message: string;
