@@ -131,6 +131,7 @@ export const api = {
   updateServer: (id: number, payload: Partial<ServerCreatePayload>) =>
     request<Server>(`/servers/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
   deleteServer: (id: number) => request<void>(`/servers/${id}`, { method: "DELETE" }),
+  retryInstall: (id: number) => request<void>(`/servers/${id}/install/retry`, { method: "POST" }),
   startServer: (id: number) => request<void>(`/servers/${id}/start`, { method: "POST" }),
   stopServer: (id: number) => request<void>(`/servers/${id}/stop`, { method: "POST" }),
   restartServer: (id: number) => request<void>(`/servers/${id}/restart`, { method: "POST" }),

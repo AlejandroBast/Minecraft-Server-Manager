@@ -110,6 +110,16 @@ class ServerRead(ServerBase):
 
     @computed_field
     @property
+    def installed(self) -> bool:
+        """La instalación terminó bien si el servidor tiene un Java asignado.
+
+        Distingue «detenido y listo para arrancar» de «nunca llegó a
+        instalarse», que son estados muy distintos para la interfaz.
+        """
+        return self.java_path is not None
+
+    @computed_field
+    @property
     def supports_plugins(self) -> bool:
         return self.type.supports_plugins
 

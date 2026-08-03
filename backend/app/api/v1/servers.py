@@ -5,7 +5,8 @@ from __future__ import annotations
 from fastapi import APIRouter, BackgroundTasks, status
 
 from app.api.deps import DbSession
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import NotFoundError, ServerStateError
+from app.models.enums import ServerStatus
 from app.schemas.downloads import InstallProgressRead
 from app.schemas.server import ServerCreate, ServerCreated, ServerRead, ServerUpdate
 from app.schemas.stats import ServerStatsRead
@@ -44,6 +45,30 @@ def create_server(
 @router.get("/{server_id}", response_model=ServerRead)
 def get_server(server_id: int, db: DbSession) -> ServerRead:
     return _with_uptime(ServerService(db).get_server(server_id))
+
+
+@router.post("/{server_id}/install/retry", status_code=status.HTTP_202_ACCEPTED)
+def retry_install(
+    server_id: int, db: DbSession, background_tasks: BackgroundTasks
+) -> dict[str, str]:
+    """Reintenta la instalación sin perder el servidor ni su mundo.
+
+    Una descarga cortada (internet, antivirus, cierre de la aplicación) dejaba
+    el servidor en un callejón sin salida: no arrancaba y había que borrarlo.
+    """
+    server = ServerService(db).get_server(server_id)
+    if manager.is_running(server.id):
+        raise ServerStateError("Detén el servidor antes de reinstalarlo.")
+    if server.status is ServerStatus.INSTALLING:
+        raise ServerStateError("La instalación ya está en curso.")
+
+    server.status = ServerStatus.INSTALLING
+    server.last_error = None
+    db.commit()
+
+    tracker.clear(server_id)
+    background_tasks.add_task(run_full_install, server_id)
+    return {"status": "installing"}
 
 
 @router.get("/{server_id}/stats", response_model=ServerStatsRead)

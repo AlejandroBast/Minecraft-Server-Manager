@@ -142,7 +142,8 @@ una única vez.
 | Síntoma | Causa y solución |
 |---|---|
 | «No se puede conectar con el backend» en el panel | La primera terminal se cerró. Vuelve a ejecutar el comando del Paso 4 |
-| El servidor se queda en **Error** | Abre su tarjeta: el motivo aparece escrito. Suele ser la descarga interrumpida; elimínalo y créalo de nuevo |
+| El servidor se queda en **Error** | Abre su tarjeta: el motivo aparece escrito. Si la descarga se cortó, el botón pasa a ser **Reintentar instalación** — púlsalo y no pierdes ni el servidor ni el mundo |
+| «Este servidor no llegó a instalarse» al iniciar | La descarga de Java o del jar no terminó. Usa **Reintentar instalación** en esa misma tarjeta |
 | «El puerto ya lo usa el servidor X» | Dos servidores no pueden compartir puerto. Usa 25566, 25567… |
 | Tus amigos no entran desde fuera | Comprueba en **Red** si hay CGNAT. Si lo hay, necesitas el túnel del Paso 6 |
 | Windows pregunta por el cortafuegos | Es normal la primera vez que arranca Java. Permite el acceso en redes privadas |
@@ -259,6 +260,7 @@ apuntar a otra dirección, define `NEXT_PUBLIC_API_URL`.
 | GET | `/api/v1/system/recommendations` | Jugadores y memoria estimados por tipo de servidor |
 | GET | `/api/v1/servers/{id}/stats` | CPU, RAM, jugadores, TPS, tamaño del mundo |
 | GET | `/api/v1/servers/{id}/install` | Progreso de la instalación en curso |
+| POST | `/api/v1/servers/{id}/install/retry` | Reintenta una instalación fallida sin borrar el servidor |
 | POST | `/api/v1/system/cleanup` | Borra copias huérfanas y temporales sueltos |
 | POST | `/api/v1/servers/{id}/start` | Arranca el proceso Java del servidor |
 | POST | `/api/v1/servers/{id}/stop` | Detención limpia (`stop` por stdin; kill sólo si no responde) |
@@ -321,6 +323,9 @@ Reglas de negocio que aplica el backend:
 - Al arrancar, la aplicación **corrige los estados imposibles** heredados de un
   cierre inesperado (servidores «en línea» sin proceso, copias «en curso») y
   borra los restos de descargas cortadas.
+- Una instalación que no terminó **se puede reintentar** sin borrar el servidor
+  ni su mundo. La interfaz no ofrece «Iniciar» a un servidor sin instalar:
+  ofrecerlo sólo llevaba a un error sin salida.
 - Si hay CGNAT, la solución es el **túnel de playit.gg**, integrado en la app:
   descarga el agente oficial (versión fijada y verificada por sha256), lo
   ejecuta y muestra la dirección pública lista para copiar. Los jugadores no

@@ -179,10 +179,17 @@ class ProcessManager:
 
         settings = get_settings()
         root = settings.servers_dir / server.folder
-        if not server.java_path or not Path(server.java_path).is_file():
+        if not server.java_path:
             raise ValidationError(
-                "No se encuentra el Java de este servidor; recrea el servidor.",
-                details={"java": server.java_path},
+                "Este servidor no llegó a instalarse: usa «Reintentar instalación» "
+                "para descargar Java y los archivos que le faltan.",
+                details={"reason": "not_installed"},
+            )
+        if not Path(server.java_path).is_file():
+            raise ValidationError(
+                "El Java de este servidor ya no está en su sitio. Usa «Reintentar "
+                "instalación» para volver a descargarlo.",
+                details={"java": server.java_path, "reason": "java_missing"},
             )
 
         command = self._build_command(server, root)

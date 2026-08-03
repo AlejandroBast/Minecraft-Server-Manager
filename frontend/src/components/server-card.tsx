@@ -10,6 +10,7 @@ import {
   MemoryStick,
   Play,
   Puzzle,
+  RefreshCw,
   RotateCcw,
   Square,
   Terminal,
@@ -76,7 +77,10 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
   const [deleting, setDeleting] = useState(false);
   const [acting, setActing] = useState(false);
 
-  const canStart = server.status === "stopped" || server.status === "error";
+  // Un servidor cuya instalación no terminó no puede arrancar: ofrecerle
+  // «Iniciar» sólo lleva a un error. Se le ofrece reintentar la descarga.
+  const needsInstall = !server.installed && server.status !== "installing";
+  const canStart = !needsInstall && (server.status === "stopped" || server.status === "error");
   const canStop = server.status === "online" || server.status === "starting";
 
   async function runAction(action: () => Promise<void>, errorMessage: string) {
@@ -200,6 +204,20 @@ export function ServerCard({ server, onChanged }: ServerCardProps) {
                 <RotateCcw /> Reiniciar
               </Button>
             </>
+          ) : needsInstall ? (
+            <Button
+              size="sm"
+              disabled={acting}
+              onClick={() =>
+                runAction(
+                  () => api.retryInstall(server.id),
+                  "No se pudo reintentar la instalación.",
+                )
+              }
+            >
+              {acting ? <Loader2 className="animate-spin" /> : <RefreshCw />} Reintentar
+              instalación
+            </Button>
           ) : (
             <Button
               size="sm"

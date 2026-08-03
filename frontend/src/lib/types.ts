@@ -56,6 +56,7 @@ export interface Server {
   memory_max_mb: number;
   java_path: string | null;
   last_error: string | null;
+  installed: boolean;
   supports_plugins: boolean;
   supports_mods: boolean;
   uptime_seconds: number | null;
