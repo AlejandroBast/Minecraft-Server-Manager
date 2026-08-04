@@ -1,14 +1,22 @@
-# Minecraft Server Manager
+<p align="center">
+  <img src="docs/icon.png" alt="Minecraft Server Manager" width="160">
+</p>
 
-Aplicación de escritorio con interfaz web local para crear, administrar y alojar
-servidores de Minecraft Java Edition sin usar la consola ni editar ficheros a mano.
+<h1 align="center">Minecraft Server Manager</h1>
+
+<p align="center">
+  Crea, administra y aloja servidores de Minecraft Java Edition desde tu propio
+  equipo, sin usar la consola ni editar ficheros a mano.
+</p>
+
+---
 
 - El usuario **nunca** descarga jars ni Java: la aplicación lo hace por él.
 - La aplicación **no limita** los recursos del equipo: sólo recomienda.
 - Cada servidor es un proceso independiente supervisado por el backend.
 
-**Proyecto completo**: las 11 fases están implementadas y verificadas contra un
-servidor de Minecraft real. 94 pruebas automáticas en el backend.
+**Proyecto completo**: las 12 fases están implementadas y verificadas contra un
+servidor de Minecraft real. 108 pruebas automáticas en el backend.
 
 ---
 
@@ -166,6 +174,7 @@ una única vez.
 | 9 | Red (IP, puertos, UPnP, dominio) | ✅ completada |
 | 10 | Optimización y pruebas | ✅ completada |
 | 11 | Acceso desde internet (túnel playit.gg) | ✅ completada |
+| 12 | Red privada con Tailscale (menos latencia) | ✅ completada |
 
 Todos los tipos se instalan solos salvo **Spigot**, que no publica descargas
 (exige compilar con BuildTools) y se rechaza al crear explicando por qué; Paper
@@ -222,8 +231,13 @@ minecraft-server-manager/
 ├── database/           manager.db (SQLite)
 ├── logs/               app / servers / downloads / console
 ├── config/             preferencias exportadas
+├── docs/               icono del proyecto
 └── temp/               ficheros intermedios
 ```
+
+El icono vive en dos sitios a propósito: `docs/icon.png` para esta
+documentación y `frontend/src/app/icon.png`, que Next.js convierte solo en el
+icono de la pestaña del navegador.
 
 ## Desarrollo
 
